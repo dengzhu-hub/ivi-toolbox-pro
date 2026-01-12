@@ -1,0 +1,11 @@
+{
+    "root_password": "adayo@N51",
+    "unsplash_keys": [
+        "BD0I4Br4tLY4WVyNFCNIzxB-IUn1uMkSP4Ebl8Bf4AY"
+    ],
+    "paths": {
+        "materials": "test_materials",
+        "screenshots": "screenshots",
+        "logs": "captured_logs"
+    }
+}

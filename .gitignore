@@ -1,0 +1,70 @@
+# --- Python 通用忽略 ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- 虚拟环境 ---
+venv/
+env/
+ENV/
+.venv/
+
+# --- IDE 配置 (VSCode/PyCharm) ---
+.idea/
+.vscode/
+*.swp
+
+# --- IVI Toolbox 运行时生成的数据 (关键) ---
+# 不要上传本地生成的日志文件
+captured_logs/
+exported_logs/
+monkey_logs/
+test_logs/
+adb_logs/
+
+# 不要上传本地截图和录屏
+screenshots/
+screen_records/
+
+# 不要上传下载的素材和转换的图片
+test_materials/
+converted_images/
+image_factory_output/
+
+# 忽略本地临时文件
+temp_*.txt
+temp_*.json
+
+# --- 配置文件 ---
+# 通常建议上传 config.json 的模板，但忽略包含真实 Key 的本地配置
+# 这里我们保留 config.json (作为默认模板)，但如果你有私有 Key，请取消注释下一行
+# config.json
+
+# --- 打包产物 ---
+*.spec
+*.exe
+
+# --- 工具依赖 ---
+# 一般不上传 adb 二进制文件，由用户自行配置环境变量
+adb.exe
+AdbWinApi.dll
+AdbWinUsbApi.dll

@@ -1,0 +1,12 @@
+{
+    "root_password": "填写你的车机Root密码",
+    "unsplash_keys": [
+        "Key_1_在这里",
+        "Key_2_在这里"
+    ],
+    "paths": {
+        "materials": "test_materials",
+        "screenshots": "screenshots",
+        "logs": "captured_logs"
+    }
+}
