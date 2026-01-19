@@ -1,0 +1,265 @@
+
+01-15 10:29:50.008 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605396.
+01-15 10:29:50.008 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605396
+01-15 10:29:50.008 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605396.
+01-15 10:29:55.012 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605481.
+01-15 10:29:55.012 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605481
+01-15 10:29:55.012 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605481.
+01-15 10:29:59.263 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1229013
+01-15 10:29:59.264 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:30:00.024 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604368.
+01-15 10:30:00.024 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604368
+01-15 10:30:00.024 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604368.
+01-15 10:30:05.026 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605308.
+01-15 10:30:05.027 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605308
+01-15 10:30:05.027 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605308.
+01-15 10:30:10.039 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605330.
+01-15 10:30:10.039 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605330
+01-15 10:30:10.039 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605330.
+01-15 10:30:15.039 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605718.
+01-15 10:30:15.039 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605718
+01-15 10:30:15.040 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605718.
+01-15 10:30:19.277 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1249056
+01-15 10:30:19.277 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:30:20.047 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605772.
+01-15 10:30:20.047 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605772
+01-15 10:30:20.047 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605772.
+01-15 10:30:25.053 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604013.
+01-15 10:30:25.053 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604013
+01-15 10:30:25.053 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604013.
+01-15 10:30:30.048 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605765.
+01-15 10:30:30.049 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605765
+01-15 10:30:30.049 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605765.
+01-15 10:30:35.053 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605528.
+01-15 10:30:35.054 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605528
+01-15 10:30:35.054 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605528.
+01-15 10:30:36.293 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:36:292 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.android.systemui
+01-15 10:30:36.499 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:36:498 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:
+01-15 10:30:39.286 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1269095
+01-15 10:30:39.286 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:30:40.062 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605029.
+01-15 10:30:40.062 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605029
+01-15 10:30:40.063 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605029.
+01-15 10:30:45.069 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605469.
+01-15 10:30:45.069 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605469
+01-15 10:30:45.070 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605469.
+01-15 10:30:50.070 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605044.
+01-15 10:30:50.070 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605044
+01-15 10:30:50.071 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605044.
+01-15 10:30:51.909 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:51:909 - [ main: SourceFile:1 sysLanguageChange ] - 2 - -sysLanguageChange锛? sysLanguage 锛?0 sysMode 锛?0
+01-15 10:30:51.914 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:51:912 - [ main: SourceFile:1 setRedDotStatusListen ] - 2 - -setRedDotStatusListen锛? redDotStatusListen 锛?com.adayo.app.setting.ui.activity.MainActivity$4@f80a8ef
+01-15 10:30:51.918 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:51:915 - [ main: SourceFile:1 setInBackgroundActivity ] - 2 - -setInBackgroundActivity锛? inBack 锛?false
+01-15 10:30:53.400 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:53:400 - [ main: SourceFile:1 setInBackgroundActivity ] - 2 - -setInBackgroundActivity锛? inBack 锛?true
+01-15 10:30:54.474 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:54:473 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.android.systemui
+01-15 10:30:54.689 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:30:54:689 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:
+01-15 10:30:55.081 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605108.
+01-15 10:30:55.081 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605108
+01-15 10:30:55.081 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605108.
+01-15 10:30:59.294 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1289043
+01-15 10:30:59.294 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:31:00.078 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605652.
+01-15 10:31:00.079 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605652
+01-15 10:31:00.079 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605652.
+01-15 10:31:05.089 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605539.
+01-15 10:31:05.089 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605539
+01-15 10:31:05.089 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605539.
+01-15 10:31:10.090 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605728.
+01-15 10:31:10.091 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605728
+01-15 10:31:10.091 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605728.
+01-15 10:31:15.099 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605616.
+01-15 10:31:15.099 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605616
+01-15 10:31:15.099 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605616.
+01-15 10:31:19.304 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1309109
+01-15 10:31:19.304 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:31:20.101 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604888.
+01-15 10:31:20.101 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604888
+01-15 10:31:20.101 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604888.
+01-15 10:31:25.105 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604786.
+01-15 10:31:25.106 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604786
+01-15 10:31:25.106 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604786.
+01-15 10:31:30.117 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605069.
+01-15 10:31:30.117 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605069
+01-15 10:31:30.117 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605069.
+01-15 10:31:35.115 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605863.
+01-15 10:31:35.115 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605863
+01-15 10:31:35.115 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605863.
+01-15 10:31:39.318 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1329062
+01-15 10:31:39.318 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:31:40.122 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605500.
+01-15 10:31:40.122 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605500
+01-15 10:31:40.122 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605500.
+01-15 10:31:45.137 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605127.
+01-15 10:31:45.137 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605127
+01-15 10:31:45.137 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605127.
+01-15 10:31:50.143 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605608.
+01-15 10:31:50.144 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605608
+01-15 10:31:50.144 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605608.
+01-15 10:31:55.146 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605714.
+01-15 10:31:55.147 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605714
+01-15 10:31:55.147 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605714.
+01-15 10:31:59.333 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1349111
+01-15 10:31:59.333 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:32:00.151 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604831.
+01-15 10:32:00.151 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604831
+01-15 10:32:00.151 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604831.
+01-15 10:32:05.158 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605249.
+01-15 10:32:05.159 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605249
+01-15 10:32:05.159 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605249.
+01-15 10:32:10.161 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605543.
+01-15 10:32:10.161 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605543
+01-15 10:32:10.161 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605543.
+01-15 10:32:15.173 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604962.
+01-15 10:32:15.173 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604962
+01-15 10:32:15.173 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604962.
+01-15 10:32:19.349 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1369159
+01-15 10:32:19.349 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:32:20.175 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605766.
+01-15 10:32:20.175 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605766
+01-15 10:32:20.175 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605766.
+01-15 10:32:25.184 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605757.
+01-15 10:32:25.184 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605757
+01-15 10:32:25.185 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605757.
+01-15 10:32:30.185 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605790.
+01-15 10:32:30.186 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605790
+01-15 10:32:30.186 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605790.
+01-15 10:32:35.194 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604719.
+01-15 10:32:35.195 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604719
+01-15 10:32:35.195 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604719.
+01-15 10:32:39.360 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1389125
+01-15 10:32:39.360 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:32:40.198 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605627.
+01-15 10:32:40.198 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605627
+01-15 10:32:40.198 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605627.
+01-15 10:32:45.203 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605786.
+01-15 10:32:45.204 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605786
+01-15 10:32:45.204 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605786.
+01-15 10:32:50.214 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605329.
+01-15 10:32:50.214 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605329
+01-15 10:32:50.214 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605329.
+01-15 10:32:55.216 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605008.
+01-15 10:32:55.216 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605008
+01-15 10:32:55.217 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605008.
+01-15 10:32:59.369 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1409184
+01-15 10:32:59.369 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:33:00.216 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169606062.
+01-15 10:33:00.217 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169606062
+01-15 10:33:00.217 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169606062.
+01-15 10:33:05.229 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605449.
+01-15 10:33:05.230 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605449
+01-15 10:33:05.230 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605449.
+01-15 10:33:10.234 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605316.
+01-15 10:33:10.235 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605316
+01-15 10:33:10.235 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605316.
+01-15 10:33:15.238 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605828.
+01-15 10:33:15.238 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605828
+01-15 10:33:15.239 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605828.
+01-15 10:33:19.378 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1429131
+01-15 10:33:19.378 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:33:20.236 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605236.
+01-15 10:33:20.236 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605236
+01-15 10:33:20.236 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605236.
+01-15 10:33:25.241 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605270.
+01-15 10:33:25.241 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605270
+01-15 10:33:25.242 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605270.
+01-15 10:33:27.372 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:27:372 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛歯ull;package_name:null
+01-15 10:33:28.369 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:28:369 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛歯ull;package_name:null
+01-15 10:33:28.878 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:28:878 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.android.systemui
+01-15 10:33:30.249 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604428.
+01-15 10:33:30.249 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604428
+01-15 10:33:30.249 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604428.
+01-15 10:33:32.065 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:32:065 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.android.systemui
+01-15 10:33:32.299 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:32:299 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:
+01-15 10:33:35.250 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604982.
+01-15 10:33:35.251 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604982
+01-15 10:33:35.251 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604982.
+01-15 10:33:39.390 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1449169
+01-15 10:33:39.390 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:33:40.256 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605119.
+01-15 10:33:40.256 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605119
+01-15 10:33:40.257 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605119.
+01-15 10:33:42.730 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:42:730 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.android.systemui
+01-15 10:33:45.267 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169606121.
+01-15 10:33:45.267 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169606121
+01-15 10:33:45.268 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169606121.
+01-15 10:33:47.422 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:47:422 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.android.systemui
+01-15 10:33:47.823 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:33:47:822 - [ Binder:3434_4: SourceFile:3 onChangeListener ] - 225 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.adayo.app.gallery
+01-15 10:33:50.265 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605810.
+01-15 10:33:50.266 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605810
+01-15 10:33:50.266 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605810.
+01-15 10:33:54.500 D/chargeC_bcmService(31755): * - mBcmManager.getIntTransDataMessage(DeviceInfo,557849063,0) = 0  銆?vehicleId = VCU_USR_HMI_PROMT 銆?*
+01-15 10:33:55.274 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604291.
+01-15 10:33:55.274 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169604291
+01-15 10:33:55.274 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604291.
+01-15 10:33:59.398 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1469214
+01-15 10:33:59.398 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:34:00.281 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605595.
+01-15 10:34:00.281 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605595
+01-15 10:34:00.282 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605595.
+01-15 10:34:00.560 D/chargeC_bcmService(31755): * - mBcmManager.getIntTransDataMessage(DeviceInfo,557849063,0) = 0  銆?vehicleId = VCU_USR_HMI_PROMT 銆?*
+01-15 10:34:02.955 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:02:955 - [ main: SourceFile:1 sysLanguageChange ] - 2 - -sysLanguageChange锛? sysLanguage 锛?0 sysMode 锛?0
+01-15 10:34:02.962 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:02:962 - [ main: SourceFile:1 setInBackgroundActivity ] - 2 - -setInBackgroundActivity锛? inBack 锛?false
+01-15 10:34:03.908 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:03:907 - [ main: SourceFile:1 showCurrentOtaFragment ] - 2 - -showCurrentOtaFragment锛? isShow 锛?false
+01-15 10:34:04.360 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:359 - [ main: SourceFile:1 showCurrentOtaFragment ] - 2 - -showCurrentOtaFragment锛? isShow 锛?false
+01-15 10:34:04.563 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:563 - [ main: SourceFile:1 showCurrentOtaFragment ] - 2 - -showCurrentOtaFragment锛? isShow 锛?true
+01-15 10:34:04.568 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:565 - [ main: SourceFile:1 sysLanguageChange ] - 2 - -sysLanguageChange锛? sysLanguage 锛?0 sysMode 锛?0
+01-15 10:34:04.842 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:842 - [ main: SourceFile:2 onCreateView ] - 2 - OtaMainFragment-onCreateView
+01-15 10:34:04.847 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:844 - [ main: SourceFile:47 init ] - 2 - init()-status 锛?0
+01-15 10:34:04.852 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:844 - [ main: SourceFile:50 init ] - 2 - OtaMainFragment-init()
+01-15 10:34:04.855 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:850 - [ main: SourceFile:1 onConnectionStatusChanged ] - 2 - bridge networkConnectionStatus = 21
+01-15 10:34:04.861 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:850 - [ main: SourceFile:10 onConnectionStatusChanged ] - 2 - init: has net work 鏈夌綉缁?
+01-15 10:34:04.864 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:850 - [ main: SourceFile:1 addListeners ] - 2 - OtaMainFragment-addListeners()
+01-15 10:34:04.867 I/tbox:UE/UP:1.5.7 ( 3434): 2026-01-15 10:34:04:867 - [ main: UeUpManager.java:385 send_CONFIG_SYNC_REQUEST ] - 2 - UeUpManager : send_CONFIG_SYNC_REQUEST + dstate 锛?0 ustate : 0 vstate : 1 hmiVersion : VM:8155-2 HMI:4.0.1>iccpriver>CVS:S010508;CVM:V0.00.01 securitysdkver:  BASM:2.1.0.3
+01-15 10:34:04.868 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:851 - [ main: SourceFile:1 fetchData ] - 2 - OtaMainFragment-fetchData()
+01-15 10:34:04.870 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:851 - [ main: SourceFile:4 setNewVersion ] - 2 - 鏂扮増鏈彿锛歯ull鐗堟湰澶у皬锛歯ull
+01-15 10:34:04.876 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:852 - [ main: SourceFile:3 setSystemThem ] - 2 - new_testing.isEnabled()锛?detect_new_versions.isEnabled()truedetect_new_versions.getVisibility()8鍒囨崲涓婚type锛?OtaHmiManager.mSysMode:0
+01-15 10:34:04.880 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:852 - [ main: SourceFile:3 CurrentVersionExclamationMark ] - 2 - 褰撳墠鐗堟湰锛歯ull褰撳墠鏄剧ず鐨勭増鏈彿:ARCFOX-V1.0.0
+01-15 10:34:04.884 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:852 - [ main: SourceFile:25 setSwitch ] - 2 - autoUpdateSw-0-nightAutoUpdateSw-0
+01-15 10:34:04.888 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:852 - [ main: SourceFile:29 setSystemThem ] - 2 - 璁剧疆涓婚鏃犻绾︽椂闂?
+01-15 10:34:04.892 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:853 - [ main: SourceFile:1 setDownTips ] - 2 - 涓嬭浇瀹屾垚鎻愮ず璇紝status:3
+01-15 10:34:04.897 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:864 - [ main: SourceFile:25 setSwitch ] - 2 - autoUpdateSw-0-nightAutoUpdateSw-0
+01-15 10:34:04.900 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:865 - [ main: SourceFile:3 showViewStatus ] - 2 - showViewStatus锛?锛?
+01-15 10:34:04.904 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:865 - [ main: SourceFile:5 upgradeSwitchCheck ] - 2 - 104-download: 0;night_upgrade:0;verCodes:S010508;verCodeM:V0.00.01
+01-15 10:34:04.908 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:866 - [ main: SourceFile:4 l ] - 2 - -isStartServer锛?mInstance : com.beijingos.otaaarlib.services.ApiService@8219841mUeUpManager 锛?com.intest.ueuplib.UeUpManager@651e0bc:mContext-com.beijingos.otaaarlib.services.ApiService@8219841
+01-15 10:34:04.911 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:866 - [ main: SourceFile:2 h ] - 2 - ApiService-getInstance锛?OtaHmiManager.mContext 锛?com.adayo.app.setting.App@2ec1dab;mInstance 锛?com.beijingos.otaaarlib.services.ApiService@8219841:mContextcom.beijingos.otaaarlib.services.ApiService@8219841
+01-15 10:34:04.915 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:872 - [ main: SourceFile:3 onResume ] - 2 - OtaMainFragment-onResume
+01-15 10:34:04.919 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:873 - [ main: SourceFile:1 setInBackgroundActivity ] - 2 - -setInBackgroundActivity锛? inBack 锛?false
+01-15 10:34:04.924 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:874 - [ main: SourceFile:1 showCurrentOtaFragment ] - 2 - -showCurrentOtaFragment锛? isShow 锛?true
+01-15 10:34:04.929 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:874 - [ main: SourceFile:3 setSystemThem ] - 2 - new_testing.isEnabled()锛?detect_new_versions.isEnabled()truedetect_new_versions.getVisibility()8鍒囨崲涓婚type锛?OtaHmiManager.mSysMode:0
+01-15 10:34:04.933 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:874 - [ main: SourceFile:3 CurrentVersionExclamationMark ] - 2 - 褰撳墠鐗堟湰锛歯ull褰撳墠鏄剧ず鐨勭増鏈彿:ARCFOX-V1.0.0
+01-15 10:34:04.937 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:874 - [ main: SourceFile:25 setSwitch ] - 2 - autoUpdateSw-0-nightAutoUpdateSw-0
+01-15 10:34:04.943 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:874 - [ main: SourceFile:29 setSystemThem ] - 2 - 璁剧疆涓婚鏃犻绾︽椂闂?
+01-15 10:34:04.949 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:875 - [ main: SourceFile:1 setDownTips ] - 2 - 涓嬭浇瀹屾垚鎻愮ず璇紝status:3
+01-15 10:34:04.953 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:876 - [ main: SourceFile:4 l ] - 2 - -isStartServer锛?mInstance : com.beijingos.otaaarlib.services.ApiService@8219841mUeUpManager 锛?com.intest.ueuplib.UeUpManager@651e0bc:mContext-com.beijingos.otaaarlib.services.ApiService@8219841
+01-15 10:34:04.960 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:876 - [ main: SourceFile:2 h ] - 2 - ApiService-getInstance锛?OtaHmiManager.mContext 锛?com.adayo.app.setting.App@2ec1dab;mInstance 锛?com.beijingos.otaaarlib.services.ApiService@8219841:mContextcom.beijingos.otaaarlib.services.ApiService@8219841
+01-15 10:34:04.969 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:937 - [ main: SourceFile:1 onConnectionStatusChanged ] - 2 - bridge networkConnectionStatus = 21
+01-15 10:34:04.973 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:937 - [ main: SourceFile:10 onConnectionStatusChanged ] - 2 - init: has net work 鏈夌綉缁?
+01-15 10:34:04.980 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:939 - [ main: SourceFile:1 onConnectionStatusChanged ] - 2 - bridge networkConnectionStatus = 21
+01-15 10:34:04.983 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:939 - [ main: SourceFile:10 onConnectionStatusChanged ] - 2 - init: has net work 鏈夌綉缁?
+01-15 10:34:04.988 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:942 - [ main: SourceFile:1 onConnectionStatusChanged ] - 2 - bridge networkConnectionStatus = 21
+01-15 10:34:05.005 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:942 - [ main: SourceFile:10 onConnectionStatusChanged ] - 2 - init: has net work 鏈夌綉缁?
+01-15 10:34:05.019 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:944 - [ main: SourceFile:1 onConnectionStatusChanged ] - 2 - bridge networkConnectionStatus = 21
+01-15 10:34:05.026 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:04:944 - [ main: SourceFile:10 onConnectionStatusChanged ] - 2 - init: has net work 鏈夌綉缁?
+01-15 10:34:05.097 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:05:096 - [ main: SourceFile:1 setInBackgroundActivity ] - 2 - -setInBackgroundActivity锛? inBack 锛?true
+01-15 10:34:05.109 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:05:098 - [ main: SourceFile:2 onPause ] - 2 - OtaMainFragment-onPause
+01-15 10:34:05.116 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:05:098 - [ main: SourceFile:1 setInBackgroundActivity ] - 2 - -setInBackgroundActivity锛? inBack 锛?false
+01-15 10:34:05.122 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:05:099 - [ main: SourceFile:1 showCurrentOtaFragment ] - 2 - -showCurrentOtaFragment锛? isShow 锛?false
+01-15 10:34:05.282 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605295.
+01-15 10:34:05.282 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605295
+01-15 10:34:05.282 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605295.
+01-15 10:34:05.495 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:05:494 - [ main: SourceFile:2 onStop ] - 2 - OtaMainFragment-onStop
+01-15 10:34:05.504 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:05:495 - [ main: SourceFile:1 setInBackgroundActivity ] - 2 - -setInBackgroundActivity锛? inBack 锛?true
+01-15 10:34:05.517 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:05:495 - [ main: SourceFile:1 showCurrentOtaFragment ] - 2 - -showCurrentOtaFragment锛? isShow 锛?false
+01-15 10:34:07.885 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:07:884 - [ Binder:3434_1: SourceFile:3 onChangeListener ] - 211 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛歯ull;package_name:null
+01-15 10:34:08.843 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:08:843 - [ Binder:3434_1: SourceFile:3 onChangeListener ] - 211 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.android.systemui
+01-15 10:34:09.108 I/tbox:APP:VM:8155-0 HMI:4.0.1( 3434): 2026-01-15 10:34:09:107 - [ Binder:3434_1: SourceFile:3 onChangeListener ] - 211 - 鍏ㄥ睆鍥炶皟-onChangeListener-system_full_view_status锛?;package_name:com.adayo.app.gallery
+01-15 10:34:10.290 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605880.
+01-15 10:34:10.290 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605880
+01-15 10:34:10.290 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605880.
+01-15 10:34:15.294 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605153.
+01-15 10:34:15.294 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605153
+01-15 10:34:15.295 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605153.
+01-15 10:34:19.409 I/AdsHmiSrv( 1149): topic monitor: topic - 202, last message time - 1489169
+01-15 10:34:19.410 I/AdsHmiSrv( 1149): feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:34:20.297 I/AdsHmiSrv( 1149): base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605332.
+01-15 10:34:20.297 I/AdsHmiSrv:AdsManager( 4306): pylon_time_diff:-892 system_time_diff:1768442970169605332
+01-15 10:34:20.298 I/AdsHmiSrv( 1149): sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605332.

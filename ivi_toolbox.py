@@ -605,138 +605,310 @@ class OfflineLogManager:
 
 
 # ==========================================
-# [新增] 核心模块: OTA 配置管家
-# ==========================================
-# ==========================================
-# [修复] 核心模块: OTA 配置管家 (支持 JSON)
+# [升级] 核心模块: OTA 配置管家 (智能比对+事务安全版)
 # ==========================================
 class OtaConfigManager:
     def __init__(self, driver: AdbDriver, console: Console):
         self.driver = driver
         self.console = console
         self.remote_path = "/mnt/sdcard/DeviceInfo.txt"
+        self.remote_backup = "/mnt/sdcard/DeviceInfo.txt.bak"
         self.local_temp = "temp_device_info.txt"
-        self.is_json_format = True # 标记源文件格式
+        self.is_json_format = True
 
     def _validate_vin(self, vin: str) -> Tuple[bool, str]:
-        """VIN 码校验逻辑"""
         if len(vin) != 17: return False, "长度必须为 17 位"
         if any(c in vin.upper() for c in ['I', 'O', 'Q']): return False, "包含非法字符 (I, O, Q)"
         if not re.match(r'^[A-Z0-9]+$', vin): return False, "包含特殊符号"
         return True, "验证通过"
 
     def _parse_config(self, content: str) -> Dict[str, str]:
-        """智能解析 (优先 JSON，失败则尝试 Key=Value)"""
+        """
+        智能解析 v2 (增加类型安全检查)
+        只有当内容解析为 字典(Dict) 时才被视为有效配置。
+        """
         content = content.strip()
 
-        # 1. 尝试 JSON 解析 (针对你的车机情况)
+        # 1. 尝试 JSON 解析
         try:
             data = json.loads(content)
-            self.is_json_format = True
-            return data
+            # [核心修复] 必须是字典类型，拒绝 "11", "abc", [1,2] 等合法JSON非配置数据
+            if isinstance(data, dict) and data:
+                self.is_json_format = True
+                return data
         except json.JSONDecodeError:
-            pass # 不是 JSON，尝试传统格式
+            pass
 
-        # 2. 尝试 Key=Value 解析 (兼容旧设备)
+        # 2. 尝试 Key=Value 解析
         self.is_json_format = False
         config = {}
         for line in content.splitlines():
             line = line.strip()
+            # 必须包含 '=' 且不能以 '#' 开头
             if not line or line.startswith('#') or '=' not in line: continue
-            k, v = line.split('=', 1)
-            # 去除可能存在的引号
-            config[k.strip()] = v.strip().strip('"').strip("'")
+
+            parts = line.split('=', 1)
+            # 键和值都不能为空
+            if len(parts) == 2 and parts[0].strip():
+                k, v = parts
+                config[k.strip()] = v.strip().strip('"').strip("'")
+
         return config
 
-    def run_wizard(self):
-        """OTA 配置修改向导"""
-        self.console.clear()
-        self.console.print(Panel("[bold magenta]🔧 OTA 参数配置专家[/bold magenta]", style="magenta", box=box.HEAVY))
-
-        # 1. 拉取配置
-        with self.console.status("[bold cyan]正在从车机拉取配置文件..."):
-            # 这里的 cat 比 pull 更快且不产生临时文件问题，但为了兼容中文编码，还是用 pull 稳妥
-            if os.path.exists(self.local_temp): os.remove(self.local_temp)
-            s, out = self.driver.run(f"pull {self.remote_path} {self.local_temp}")
-
-        if not s or not os.path.exists(self.local_temp):
-            self.console.print(Panel(f"[red]❌ 拉取失败: 找不到 {self.remote_path}[/red]", border_style="red"))
-            Prompt.ask("按回车返回")
-            return
-
-        # 2. 读取并解析
+    def _is_content_identical(self, content_a: str, content_b: str) -> bool:
+        """
+        智能内容比对核心
+        1. 尝试按 JSON 对象比对 (忽略空格、顺序)
+        2. 降级为文本比对 (忽略换行符差异)
+        """
+        # 尝试 JSON 比对
         try:
-            with open(self.local_temp, 'r', encoding='utf-8') as f:
-                content = f.read()
-            # 调试：打印原始内容的前50个字符
-            # self.console.print(f"[dim]Raw: {content[:50]}...[/dim]")
-            config_data = self._parse_config(content)
-        except Exception as e:
-            self.console.print(f"[red]解析失败: {e}[/red]")
-            return
+            json_a = json.loads(content_a)
+            json_b = json.loads(content_b)
+            return json_a == json_b # 字典比对，顺序无关
+        except:
+            pass
 
-        # 3. 显示当前配置
+        # 文本比对：统一换行符并去除首尾空格
+        text_a = content_a.replace('\r\n', '\n').strip()
+        text_b = content_b.replace('\r\n', '\n').strip()
+        return text_a == text_b
+
+    def _push_file_safe(self, local_path):
+        """
+        安全推送引擎 v3.0 (四重防火墙校验版)
+        Layer 1: 文件系统检查 (存在性/文件夹/大小)
+        Layer 2: 二进制文件探测 (图片/视频/Zip)
+        Layer 3: 语法格式校验 (JSON/KV)
+        Layer 4: 业务语义校验 (VIN/PNO)
+        """
+        try:
+            # === [防火墙 Layer 1] 文件系统与大小校验 ===
+            if not os.path.exists(local_path):
+                raise RuntimeError("文件路径不存在")
+
+            if os.path.isdir(local_path):
+                raise RuntimeError("禁止拖入文件夹，请选择具体的 DeviceInfo.txt 文件")
+
+            file_size = os.path.getsize(local_path)
+            if file_size > 100 * 1024: # 限制 100KB
+                # 配置文件通常只有几百字节，超过 100KB 肯定是视频、图片或巨型日志
+                raise RuntimeError(f"文件过大 ({file_size/1024:.1f} KB)。\n配置文件通常小于 5KB，请确认是否误传了日志或媒体文件。")
+
+            if file_size == 0:
+                raise RuntimeError("文件内容为空")
+
+            # === [防火墙 Layer 2] 二进制与编码探测 ===
+            try:
+                with open(local_path, 'r', encoding='utf-8', errors='strict') as f:
+                    new_raw_content = f.read()
+            except UnicodeDecodeError:
+                raise RuntimeError("文件编码异常，无法按 UTF-8 读取。\n这通常意味着你拖入的是 [图片/视频/压缩包/加密文件]。")
+
+            # 双重保险：检查是否存在 Null Byte (二进制文件的特征)
+            if '\0' in new_raw_content:
+                 raise RuntimeError("检测到二进制字符，这看起来像是一个 [二进制文件] 而非文本配置。")
+
+            # === [防火墙 Layer 3 & 4] 格式与语义联合校验 ===
+            # 1. 尝试解析
+            validation_data = self._parse_config(new_raw_content)
+
+            if not validation_data:
+                raise RuntimeError("无法识别文件格式。\n仅支持标准的 JSON 或 Key=Value 配置文件。")
+
+            # 2. 核心字段白名单 (业务语义校验)
+            # 只有包含这些字段之一，才承认是 DeviceInfo 配置文件
+            REQUIRED_KEYS = ["VIN", "ICC_PNO", "f1A1", "0525", "VEHICLE_TYPE"]
+
+            # 计算交集：看解析出的 Key 里有没有我们要的
+            valid_keys_found = set(validation_data.keys()).intersection(set(REQUIRED_KEYS))
+
+            if not valid_keys_found:
+                # 即使是 key=value 格式的日志，因为 key 不匹配，也会死在这里
+                garbage_sample = list(validation_data.keys())[:3]
+                raise RuntimeError(
+                    f"语义校验失败：这不是有效的 DeviceInfo 配置文件！\n"
+                    f"缺失核心字段 (如 VIN, ICC_PNO)。\n"
+                    f"识别到的无关字段: {garbage_sample}..."
+                )
+
+            # =========================================
+            # ✅ 校验通过，开始执行事务性更新
+            # =========================================
+
+            # --- Step 1: 智能比对 ---
+            temp_check_file = "ota_check_remote.tmp"
+            if os.path.exists(temp_check_file): os.remove(temp_check_file)
+
+            self.driver.run(f"pull {self.remote_path} {temp_check_file}")
+
+            if os.path.exists(temp_check_file):
+                with open(temp_check_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    old_raw_content = f.read()
+
+                if self._is_content_identical(new_raw_content, old_raw_content):
+                    self.console.print(Panel("[bold green]⚡ 内容一致，无需更新[/bold green]\n[dim]检测到新文件与车机当前配置完全相同。[/dim]", border_style="green"))
+                    os.remove(temp_check_file)
+                    return
+                os.remove(temp_check_file)
+
+            # --- Step 2: 预处理与写入 ---
+            clean_content = new_raw_content.replace('\r\n', '\n')
+            local_temp_upload = "ota_upload_ready.tmp"
+
+            try:
+                with open(local_temp_upload, 'w', encoding='utf-8', newline='\n') as f:
+                    f.write(clean_content)
+            except OSError:
+                raise RuntimeError("无法创建临时写入文件")
+
+            android_tmp = "/data/local/tmp/device_info_swap.txt"
+
+            with self.console.status("[bold yellow]正在执行安全更新事务...[/bold yellow]"):
+                self.driver.run("root")
+                self.driver.run("remount")
+
+                # A. 推送
+                s1, o1 = self.driver.run(f"push {local_temp_upload} {android_tmp}")
+                if not s1: raise RuntimeError(f"ADB 推送被拒绝: {o1}")
+
+                # B. 备份
+                check_s, check_out = self.driver.run(f"shell ls {self.remote_path}")
+                has_original = "No such" not in check_out
+                if has_original:
+                    self.driver.run(f"shell cp {self.remote_path} {self.remote_backup}")
+
+                # C. 覆盖
+                s2, o2 = self.driver.run(f"shell cp -f {android_tmp} {self.remote_path}")
+
+                # D. 验证与回滚
+                verify_s, verify_out = self.driver.run(f"shell ls -l {self.remote_path}")
+
+                if s2 and "No such" not in verify_out:
+                    self.driver.run(f"shell rm {android_tmp}")
+                    self.console.print(Panel(f"[bold green]✅ 配置更新成功！[/bold green]\n[dim]备份路径: {self.remote_backup}[/dim]\n[yellow]请重启车机生效[/yellow]", border_style="green"))
+                else:
+                    self.console.print(f"[bold red]❌ 写入失败: {o2}[/bold red]")
+                    if has_original:
+                        self.console.print("[yellow]🔄 执行自动回滚...[/yellow]")
+                        self.driver.run(f"shell cp -f {self.remote_backup} {self.remote_path}")
+                    raise RuntimeError("文件写入校验未通过")
+
+            if os.path.exists(local_temp_upload): os.remove(local_temp_upload)
+
+        except RuntimeError as e:
+            self.console.print(Panel(f"[bold red]⛔ 文件被拦截[/bold red]\n{e}", border_style="red"))
+
+        except Exception as e:
+            self.console.print(Panel(f"[bold red]💥 未知异常[/bold red]\nDetail: {str(e)}", border_style="red"))
+
+    def run_wizard(self):
+        while True:
+            self.console.clear()
+            self.console.print(Panel("[bold magenta]🔧 OTA 参数配置专家[/bold magenta]", style="magenta"))
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row("[yellow]1[/yellow]", "📝 [bold]查看/修改当前配置[/bold]")
+            menu.add_row("[yellow]2[/yellow]", "📂 [bold cyan]拖入文件直接替换[/bold cyan]")
+            menu.add_row("[yellow]3[/yellow]", "💾 [bold]备份当前配置[/bold]")
+            menu.add_row("[yellow]b[/yellow]", "返回")
+
+            self.console.print(Panel(menu, border_style="yellow"))
+            c = Prompt.ask("选择模式").lower()
+
+            if c == '1': self._mode_edit_online()
+            elif c == '2': self._mode_replace_file()
+            elif c == '3': self._mode_backup()
+            elif c == 'b': return
+
+    def _mode_replace_file(self):
+        self.console.print("\n[dim]请将做好的 DeviceInfo.txt 拖入下方:[/dim]")
+        path = Prompt.ask("📂 文件路径").strip('"')
+        if not os.path.exists(path) or os.path.isdir(path):
+            self.console.print("[red]❌ 文件无效[/red]"); time.sleep(1); return
+
+        try:
+            with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                preview = f.read(150)
+            self.console.print(Panel(f"{preview}\n...", title="预览", border_style="dim"))
+
+            # 这里不需要问确认了，直接交给 _push_file_safe，它会比对内容
+            # 如果内容一样，它会提示；如果不一样，它会自动备份并写入
+            if Prompt.ask("[bold yellow]开始处理?[/bold yellow]", choices=["y", "n"], default="y") == "y":
+                self._push_file_safe(path)
+
+        except Exception as e:
+            self.console.print(f"[red]错误: {e}[/red]")
+
+        Prompt.ask("按回车返回")
+
+    def _mode_backup(self):
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        bak_path = os.path.join(os.getcwd(), "exported_logs", f"DeviceInfo_BAK_{ts}.txt")
+        os.makedirs(os.path.dirname(bak_path), exist_ok=True)
+        s, out = self.driver.run(f"pull {self.remote_path} \"{bak_path}\"")
+        if s: self.console.print(f"[green]✔ 备份成功: {bak_path}[/green]")
+        else: self.console.print(f"[red]备份失败: {out}[/red]")
+        Prompt.ask("按回车返回")
+
+    def _mode_edit_online(self):
+        if os.path.exists(self.local_temp): os.remove(self.local_temp)
+        self.console.print("[dim]正在拉取...[/dim]")
+        s, out = self.driver.run(f"pull {self.remote_path} {self.local_temp}")
+
+        config_data = {}
+        if not s:
+            if "No such" in out:
+                self.console.print(Panel("[yellow]⚠ 文件不存在，将新建配置[/yellow]", border_style="yellow"))
+                config_data = {"ICC_PNO": "N/A", "VIN": "N/A"}
+                self.is_json_format = True
+            else:
+                self.console.print(f"[red]❌ 拉取错误: {out}[/red]"); time.sleep(2); return
+        else:
+            try:
+                with open(self.local_temp, 'r', encoding='utf-8') as f:
+                    config_data = self._parse_config(f.read())
+            except: config_data = {"ICC_PNO": "Error", "VIN": "Error"}
+
         pno = config_data.get("ICC_PNO", "N/A")
         vin = config_data.get("VIN", "N/A")
 
-        grid = Table.grid(expand=True, padding=(0,2))
+        grid = Table.grid(expand=True)
         grid.add_column(style="cyan", justify="right")
         grid.add_column(style="bold white")
         grid.add_row("ICC_PNO:", pno)
-        grid.add_row("VIN Code:", vin)
+        grid.add_row("VIN:", vin)
+        self.console.print(Panel(grid, title="当前配置"))
 
-        # 显示其他可能的字段 (如 f1A1, 0525)
-        extra_keys = [k for k in config_data.keys() if k not in ["ICC_PNO", "VIN"]]
-        if extra_keys:
-            grid.add_row("[dim]Other:[/dim]", f"[dim]{', '.join(extra_keys)}[/dim]")
-
-        self.console.print(Panel(grid, title="[yellow]当前设备参数[/yellow]", border_style="yellow"))
-
-        # 4. 交互修改
-        if Prompt.ask("\n是否修改配置?", choices=["y", "n"], default="n") == "n":
+        if Prompt.ask("修改配置?", choices=["y","n"], default="n") == 'n':
             if os.path.exists(self.local_temp): os.remove(self.local_temp)
             return
 
-        new_pno = Prompt.ask("请输入新 ICC_PNO", default=pno).strip()
-
+        new_pno = Prompt.ask("PNO", default=pno).strip()
         while True:
-            new_vin = Prompt.ask("请输入新 VIN 码", default=vin).strip().upper()
-            is_valid, msg = self._validate_vin(new_vin)
-            if is_valid: break
-            self.console.print(f"[red]❌ VIN 格式错误: {msg}[/red]")
+            new_vin = Prompt.ask("VIN", default=vin).strip().upper()
+            if self._validate_vin(new_vin)[0]: break
+            self.console.print("[red]格式错误[/red]")
 
-        # 5. 生成并推送
-        if new_pno != pno or new_vin != vin:
-            config_data["ICC_PNO"] = new_pno
-            config_data["VIN"] = new_vin
-
-            try:
-                with open(self.local_temp, 'w', encoding='utf-8') as f:
-                    if self.is_json_format:
-                        # 核心修复：按 JSON 格式写回
-                        # separators=(',', ':') 去除空格，使其紧凑，与车机原格式保持一致
-                        json.dump(config_data, f, separators=(',', ':'), ensure_ascii=False)
-                    else:
-                        # 按 Key=Value 写回
-                        for k, v in config_data.items():
-                            f.write(f"{k}={v}\n")
-
-                with self.console.status("[bold green]正在推送新配置..."):
-                    self.driver.run("root")
-                    self.driver.run("remount")
-                    s, out = self.driver.run(f"push {self.local_temp} {self.remote_path}")
-
-                if s:
-                    self.console.print(Panel(f"[bold green]✅ 更新成功！[/bold green]\n请重启车机生效", border_style="green"))
+        # 无论是否有变化，都交给 _push_file_safe 去判断
+        # 因为这里只是内存变量变了，还没生成文件
+        config_data["ICC_PNO"] = new_pno
+        config_data["VIN"] = new_vin
+        try:
+            with open(self.local_temp, 'w', encoding='utf-8') as f:
+                if self.is_json_format:
+                    json.dump(config_data, f, separators=(',', ':'), ensure_ascii=False)
                 else:
-                    self.console.print(f"[red]推送失败: {out}[/red]")
-            except Exception as e:
-                self.console.print(f"[red]写入错误: {e}[/red]")
-        else:
-            self.console.print("[dim]配置未变化[/dim]")
+                    for k, v in config_data.items(): f.write(f"{k}={v}\n")
+
+            # 调用核心推送逻辑（内含比对）
+            self._push_file_safe(self.local_temp)
+
+        except Exception as e:
+            self.console.print(f"[red]错误: {e}[/red]")
 
         if os.path.exists(self.local_temp): os.remove(self.local_temp)
-        Prompt.ask("\n按回车返回...")
+        Prompt.ask("按回车返回")
 
 
 # ==========================================
@@ -1025,18 +1197,38 @@ class IVIMetricsEngine:
         except Exception: return []
 
     def refresh(self):
-        """高效数据采集序列"""
-        # 1. 系统负载
-        uptime = self.source.run_command("uptime", use_root=True)  # 使用root
-        load = re.search(r"average:\s+([\d.]+),?\s+([\d.]+),?\s+([\d.]+)", uptime)
-        if load: self.snapshot["sys"]["load"] = load.groups()
-        # 2. 存储健康度 (针对视频中 0% 突跳 Bug 的监控)
-        df = self.source.run_command("df -h /data", use_root=True)
-        storage = re.search(r"(\d+)%", df)
-        if storage: self.snapshot["sys"]["storage"] = f"{storage.group(1)}%"
-        # 3. 进程监控 (使用 top 替代 dumpsys，速度提升 10 倍)
-        top_raw = self.source.run_command("top -b -n 1", use_root=True)
-        self._parse_top(top_raw)
+        """高效数据采集序列 - 增强容错"""
+        try:
+            # 1. 系统负载
+            uptime = self.source.run_command("uptime", use_root=True)
+            load = re.search(r"average:\s+([\d.]+),?\s+([\d.]+),?\s+([\d.]+)", uptime)
+            if load:
+                self.snapshot["sys"]["load"] = load.groups()
+            else:
+                self.snapshot["sys"]["load"] = ("0.00", "0.00", "0.00")
+
+            # 2. 存储健康度
+            df = self.source.run_command("df -h /data", use_root=True)
+            storage = re.search(r"(\d+)%", df)
+            if storage:
+                self.snapshot["sys"]["storage"] = f"{storage.group(1)}%"
+            else:
+                self.snapshot["sys"]["storage"] = "N/A"
+
+            # 3. 进程监控 (核心修复点)
+            top_raw = self.source.run_command("top -b -n 1", use_root=True)
+
+            # 【新增】如果 top 命令失败，尝试降级方案
+            if not top_raw or len(top_raw) < 50:
+                # 降级方案：使用 ps 命令
+                top_raw = self.source.run_command("ps -A -o PID,CPU,MEM,COMMAND", use_root=True)
+
+            self._parse_top(top_raw)
+
+        except Exception as e:
+            # 容错：即使采集失败也不崩溃
+            self.snapshot["apps"] = []
+            print(f"[DEBUG] Refresh error: {e}")  # 调试用
 
     def _parse_top(self, raw_data: str):
         # 适配你发出来的 top 格式：Mem: 11382248K total, 10279672K used
@@ -1131,7 +1323,26 @@ class AdvancedSentinelUI:
 
         # 🟢 关键修复：在进入 Live 模式前先打印提示，并执行一次同步刷新
         self.console.print("[bold yellow]🚀 正在连接设备并拉取首帧数据，请稍候...[/bold yellow]")
-        self.engine.refresh()
+
+        try:
+            self.engine.refresh()
+
+            # 【新增】调试输出：检查数据是否成功采集
+            if not self.engine.snapshot["apps"]:
+                self.console.print("[bold red]⚠️  警告: 未能获取进程数据，请检查：[/bold red]")
+                self.console.print("   1. 设备 Root 权限是否开启")
+                self.console.print("   2. whitelist.txt 是否存在且格式正确")
+                self.console.print("   3. top 命令是否正常执行")
+                Prompt.ask("\n按回车键继续运行 (将显示空列表)...")
+            else:
+                self.console.print(f"[green]✓ 成功加载 {len(self.engine.snapshot['apps'])} 个进程[/green]")
+                time.sleep(0.5)  # 让用户看到成功提示
+
+        except Exception as e:
+            self.console.print(f"[bold red]数据采集失败: {e}[/bold red]")
+            Prompt.ask("\n按回车键返回主菜单...")
+            return
+
         self._render_all(layout)
 
         with Live(layout, refresh_per_second=2, screen=True, console=self.console) as live:
@@ -1969,7 +2180,7 @@ class MonkeyTester:
             menu.add_row("[yellow]1[/yellow]", "🎯 [bold]选择/添加目标应用[/bold] (Search)")
             menu.add_row("[yellow]2[/yellow]", "🔢 [bold]设置参数[/bold] (Count/Throttle)")
             menu.add_row("[yellow]3[/yellow]", "🌱 [bold]设置种子[/bold] (Seed)")
-            menu.add_row("[yellow]4[/yellow]", "🧹 [bold]重置为全系统测试[/bold] (Clear All)")
+            menu.add_row("[yellow]4[/yellow]", "🧹 [bold]加载所有系统应用[/bold] (Clear All)")
             menu.add_row("[yellow]5[/yellow]", "👀 [bold cyan]查看已选应用列表[/bold cyan] (Review)") # <--- 新增
             menu.add_row("[yellow]s[/yellow]", "🚀 [bold green]开始压测[/bold green] (Start)")
             menu.add_row("[yellow]b[/yellow]", "返回")
@@ -1988,9 +2199,22 @@ class MonkeyTester:
                 val = Prompt.ask("Seed值 (回车随机)", default="")
                 self.config['seed'] = val if val else None
             elif c == '4':
-                self.config['packages'] = []
-                self.console.print("[green]已重置，当前为全系统压测模式[/green]")
-                time.sleep(1)
+                with self.console.status("[bold cyan]正在拉取所有系统应用列表...[/bold cyan]"):
+                    # 使用 -s 参数获取系统包
+                    sys_pkgs = self._get_packages("-s")
+
+                if sys_pkgs:
+                    self.config['packages'] = sys_pkgs
+                    self.console.print(Panel(
+                        f"[bold green]✔ 已加载全量系统应用[/bold green]\n"
+                        f"范围: 仅包含 ROM 预装应用 (System Partition)\n"
+                        f"数量: [cyan]{len(sys_pkgs)}[/cyan] 个",
+                        border_style="green"
+                    ))
+                else:
+                    self.console.print("[red]❌ 未获取到系统应用列表[/red]")
+
+                time.sleep(1.5)
             elif c == '5': # <--- 新增响应
                 self._view_selected_packages()
             elif c == 's': self.run_test()

@@ -1,0 +1,89 @@
+{
+    "api_keys": [
+        "BD0I4Br4tLY4WVyNFCNIzxB-IUn1uMkSP4Ebl8Bf4AY"
+    ],
+    "save_dir": "D:/test_images",
+    "create_topic_subdirs": true,
+    "filename_pattern": "{topic}_{index:03d}_{id}",
+    "resolution": "full",
+    "resolution_options_comment": "可选: raw (原始最高质量, 约5-15MB) | full (高质量, 约2-5MB) | regular (中等, 约500KB-2MB) | small (小图, 约200KB) | thumb (缩略图, 约50KB)",
+    "concurrent_downloads": 8,
+    "concurrent_downloads_comment": "并发下载数: 建议 5-10，网速快可设置 10-15",
+    "timeout": 30,
+    "timeout_comment": "单个请求超时时间(秒): raw/full 建议 30-60，regular 建议 15-30",
+    "max_retries": 3,
+    "max_retries_comment": "失败重试次数: 建议 3-5 次",
+    "retry_delay": 2,
+    "retry_delay_comment": "重试间隔基础值(秒): 使用指数退避，实际等待为 delay * (2 ^ 重试次数)",
+    "topics": {
+        "car": {
+            "count": 100,
+            "description": "汽车主题 - 适用于车载 HMI 测试"
+        },
+        "nature": {
+            "count": 100,
+            "description": "自然风光 - 色彩丰富度测试"
+        },
+        "city": {
+            "count": 100,
+            "description": "城市建筑 - 锐利度和对比度测试"
+        },
+        "technology": {
+            "count": 50,
+            "description": "科技主题 - UI 科技感适配"
+        },
+        "travel": {
+            "count": 50,
+            "description": "旅行场景 - 综合场景测试"
+        }
+    },
+    "rate_limit": {
+        "requests_per_hour": 50,
+        "requests_per_hour_comment": "Unsplash 免费版限制为 50/小时",
+        "enable_auto_throttle": true,
+        "enable_auto_throttle_comment": "触发限流时自动降速"
+    },
+    "metadata": {
+        "generate_manifest": true,
+        "manifest_filename": "manifest.json",
+        "include_photographer_info": true,
+        "include_color_data": true,
+        "include_exif_data": false
+    },
+    "logging": {
+        "level": "INFO",
+        "level_options_comment": "可选: DEBUG | INFO | WARNING | ERROR",
+        "log_file": "download.log",
+        "console_output": true
+    },
+    "hmi_adaptation": {
+        "enabled": false,
+        "target_resolution": [
+            1920,
+            720
+        ],
+        "target_resolution_comment": "目标屏幕分辨率 [宽, 高]，常见: [1920, 720] | [2560, 1440] | [1920, 1080]",
+        "crop_mode": "center",
+        "crop_mode_comment": "裁剪模式: center (居中裁剪) | smart (智能裁剪，保留主体)",
+        "generate_test_images": false,
+        "test_image_count": 5,
+        "test_image_comment": "生成带时间戳的纯色测试图，用于验证图库刷新"
+    },
+    "advanced": {
+        "skip_existing_files": true,
+        "skip_existing_files_comment": "断点续传: 跳过已存在且大小正常的文件",
+        "min_file_size_kb": 10,
+        "min_file_size_comment": "最小有效文件大小(KB)，小于此值视为下载失败",
+        "verify_image_integrity": false,
+        "verify_image_integrity_comment": "下载后验证图片完整性 (需要 Pillow 库)",
+        "cleanup_failed_downloads": true,
+        "cleanup_failed_downloads_comment": "自动清理下载失败的不完整文件"
+    },
+    "_notes": {
+        "version": "2.0",
+        "last_updated": "2026-01-13",
+        "author": "IVI Testing Team",
+        "purpose": "车载信息娱乐系统 HMI 测试素材准备工具",
+        "usage": "python download_v2.py --config config.json"
+    }
+}

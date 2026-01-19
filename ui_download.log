@@ -1,0 +1,33 @@
+2026-01-14 15:04:08,152 - INFO - 正在尝试登录 Redmine: dengzhu
+2026-01-14 15:04:16,024 - ERROR - 登录失败: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=143.0.7499.193)
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0x7ff7167f88d5
+	0x7ff7167f8930
+	0x7ff7165d165d
+	0x7ff7165a91b1
+	0x7ff7166597e6
+	0x7ff71667a5c2
+	0x7ff71661ac29
+	0x7ff71661ba93
+	0x7ff716b10620
+	0x7ff716b0af60
+	0x7ff716b296c6
+	0x7ff716815dd4
+	0x7ff71681ed7c
+	0x7ff716801ff4
+	0x7ff7168021a5
+	0x7ff7167e7ed2
+	0x7ff821e0e8d7
+	0x7ff82336c53c
+
+2026-01-14 15:04:18,286 - INFO - 创建本地目录: C:\Users\HAIBING\Desktop\Adayo_logcat\UI_Resources
+2026-01-14 15:04:22,349 - WARNING - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002061E900470>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')': /session/99d56cde9d0e5a9d4874c88972e65156/url
+2026-01-14 15:04:26,409 - WARNING - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002061E900440>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')': /session/99d56cde9d0e5a9d4874c88972e65156/url
+2026-01-14 15:04:30,506 - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002061E900740>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')': /session/99d56cde9d0e5a9d4874c88972e65156/url
+2026-01-14 15:04:34,630 - INFO - 所有同步任务完成，正在关闭浏览器。
+2026-01-14 15:04:38,729 - WARNING - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002061E900B30>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')': /session/99d56cde9d0e5a9d4874c88972e65156
+2026-01-14 15:04:42,797 - WARNING - Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002061E900D10>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')': /session/99d56cde9d0e5a9d4874c88972e65156
+2026-01-14 15:04:46,881 - WARNING - Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002061E900E60>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')': /session/99d56cde9d0e5a9d4874c88972e65156

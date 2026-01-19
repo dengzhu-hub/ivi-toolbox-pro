@@ -1,0 +1,189 @@
+
+01-15 10:34:19.409  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1489169
+01-15 10:34:19.410  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:34:20.297  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605332.
+01-15 10:34:20.297  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605332
+01-15 10:34:20.298  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605332.
+01-15 10:34:25.297  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604761.
+01-15 10:34:25.297  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604761
+01-15 10:34:25.297  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604761.
+01-15 10:34:30.306  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605680.
+01-15 10:34:30.307  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605680
+01-15 10:34:30.307  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605680.
+01-15 10:34:35.311  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605953.
+01-15 10:34:35.312  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605953
+01-15 10:34:35.312  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605953.
+01-15 10:34:39.420  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1509220
+01-15 10:34:39.420  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:34:40.309  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604944.
+01-15 10:34:40.310  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604944
+01-15 10:34:40.310  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604944.
+01-15 10:34:45.314  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605748.
+01-15 10:34:45.315  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605748
+01-15 10:34:45.315  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605748.
+01-15 10:34:50.331  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605729.
+01-15 10:34:50.331  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605729
+01-15 10:34:50.331  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605729.
+01-15 10:34:55.333  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604825.
+01-15 10:34:55.334  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604825
+01-15 10:34:55.334  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604825.
+01-15 10:34:59.428  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1529179
+01-15 10:34:59.428  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:35:00.342  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604900.
+01-15 10:35:00.342  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604900
+01-15 10:35:00.342  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604900.
+01-15 10:35:05.347  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605443.
+01-15 10:35:05.347  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605443
+01-15 10:35:05.348  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605443.
+01-15 10:35:10.347  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604997.
+01-15 10:35:10.347  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604997
+01-15 10:35:10.347  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604997.
+01-15 10:35:15.359  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605249.
+01-15 10:35:15.359  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605249
+01-15 10:35:15.360  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605249.
+01-15 10:35:19.444  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1549247
+01-15 10:35:19.445  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:35:20.368  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605168.
+01-15 10:35:20.368  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605168
+01-15 10:35:20.368  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605168.
+01-15 10:35:25.367  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605107.
+01-15 10:35:25.367  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605107
+01-15 10:35:25.367  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605107.
+01-15 10:35:30.374  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605692.
+01-15 10:35:30.374  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605692
+01-15 10:35:30.374  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605692.
+01-15 10:35:35.386  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605715.
+01-15 10:35:35.386  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605715
+01-15 10:35:35.386  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605715.
+01-15 10:35:39.458  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1569205
+01-15 10:35:39.458  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:35:40.385  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605519.
+01-15 10:35:40.385  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605519
+01-15 10:35:40.385  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605519.
+01-15 10:35:45.398  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169607333.
+01-15 10:35:45.399  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169607333
+01-15 10:35:45.399  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169607333.
+01-15 10:35:50.405  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605679.
+01-15 10:35:50.405  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605679
+01-15 10:35:50.405  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605679.
+01-15 10:35:55.403  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604858.
+01-15 10:35:55.404  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604858
+01-15 10:35:55.404  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604858.
+01-15 10:35:59.468  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1589252
+01-15 10:35:59.468  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:36:00.415  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605297.
+01-15 10:36:00.415  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605297
+01-15 10:36:00.416  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605297.
+01-15 10:36:05.414  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605883.
+01-15 10:36:05.414  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605883
+01-15 10:36:05.414  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605883.
+01-15 10:36:10.427  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604905.
+01-15 10:36:10.427  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604905
+01-15 10:36:10.427  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604905.
+01-15 10:36:15.431  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605741.
+01-15 10:36:15.431  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605741
+01-15 10:36:15.431  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605741.
+01-15 10:36:19.477  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1609206
+01-15 10:36:19.477  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:36:20.436  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605493.
+01-15 10:36:20.436  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605493
+01-15 10:36:20.436  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605493.
+01-15 10:36:25.443  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605734.
+01-15 10:36:25.443  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605734
+01-15 10:36:25.443  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605734.
+01-15 10:36:30.445  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605403.
+01-15 10:36:30.445  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605403
+01-15 10:36:30.445  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605403.
+01-15 10:36:35.450  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605707.
+01-15 10:36:35.450  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605707
+01-15 10:36:35.451  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605707.
+01-15 10:36:39.490  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1629257
+01-15 10:36:39.491  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:36:40.454  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604917.
+01-15 10:36:40.454  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604917
+01-15 10:36:40.455  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604917.
+01-15 10:36:45.456  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604877.
+01-15 10:36:45.457  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604877
+01-15 10:36:45.457  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604877.
+01-15 10:36:50.469  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604848.
+01-15 10:36:50.469  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604848
+01-15 10:36:50.469  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604848.
+01-15 10:36:55.475  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604475.
+01-15 10:36:55.476  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604475
+01-15 10:36:55.476  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604475.
+01-15 10:36:59.504  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1649312
+01-15 10:36:59.505  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:37:00.480  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605914.
+01-15 10:37:00.480  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605914
+01-15 10:37:00.480  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605914.
+01-15 10:37:05.487  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605406.
+01-15 10:37:05.487  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605406
+01-15 10:37:05.488  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605406.
+01-15 10:37:10.498  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604772.
+01-15 10:37:10.498  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604772
+01-15 10:37:10.498  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604772.
+01-15 10:37:15.497  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605482.
+01-15 10:37:15.497  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605482
+01-15 10:37:15.497  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605482.
+01-15 10:37:19.516  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1669269
+01-15 10:37:19.517  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:37:20.506  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605484.
+01-15 10:37:20.506  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605484
+01-15 10:37:20.506  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605484.
+01-15 10:37:25.513  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604590.
+01-15 10:37:25.513  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604590
+01-15 10:37:25.514  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604590.
+01-15 10:37:30.518  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605603.
+01-15 10:37:30.518  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605603
+01-15 10:37:30.518  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605603.
+01-15 10:37:35.525  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605084.
+01-15 10:37:35.525  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605084
+01-15 10:37:35.525  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605084.
+01-15 10:37:39.529  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1689328
+01-15 10:37:39.529  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:37:40.535  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169606679.
+01-15 10:37:40.536  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169606679
+01-15 10:37:40.536  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169606679.
+01-15 10:37:45.535  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605744.
+01-15 10:37:45.535  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605744
+01-15 10:37:45.535  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605744.
+01-15 10:37:47.600  4306  4781 D AdsHmiSrv-jni: alloc new cmdbuffer ordlen=155, newlen =156
+01-15 10:37:50.549  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605558.
+01-15 10:37:50.549  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605558
+01-15 10:37:50.549  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605558.
+01-15 10:37:55.549  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605612.
+01-15 10:37:55.549  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605612
+01-15 10:37:55.549  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605612.
+01-15 10:37:59.541  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1709288
+01-15 10:37:59.541  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:38:00.566  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605729.
+01-15 10:38:00.566  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605729
+01-15 10:38:00.566  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605729.
+01-15 10:38:05.564  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605804.
+01-15 10:38:05.564  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605804
+01-15 10:38:05.565  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605804.
+01-15 10:38:10.572  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605493.
+01-15 10:38:10.572  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605493
+01-15 10:38:10.572  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605493.
+01-15 10:38:15.583  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604620.
+01-15 10:38:15.583  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604620
+01-15 10:38:15.583  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604620.
+01-15 10:38:19.557  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1729350
+01-15 10:38:19.557  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:38:20.593  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605216.
+01-15 10:38:20.593  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605216
+01-15 10:38:20.594  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605216.
+01-15 10:38:25.594  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605426.
+01-15 10:38:25.594  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605426
+01-15 10:38:25.595  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605426.
+01-15 10:38:30.599  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605480.
+01-15 10:38:30.599  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605480
+01-15 10:38:30.600  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605480.
+01-15 10:38:35.613  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604690.
+01-15 10:38:35.613  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169604690
+01-15 10:38:35.613  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169604690.
+01-15 10:38:39.568  1149  1215 I AdsHmiSrv: topic monitor: topic - 202, last message time - 1749302
+01-15 10:38:39.568  1149  1215 I AdsHmiSrv: feed dog: soa msg ok - 0, msg to app ok - 1, has writer - 1.
+01-15 10:38:40.619  1149  1214 I AdsHmiSrv: base time update : pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605067.
+01-15 10:38:40.619  4306  4331 I AdsHmiSrv:AdsManager: pylon_time_diff:-892 system_time_diff:1768442970169605067
+01-15 10:38:40.619  1149  1214 I AdsHmiSrv: sync base time success: clientid - 1, pylon_time_diff - 18446744073709550724, system_time_diff - 1768442970169605067.
