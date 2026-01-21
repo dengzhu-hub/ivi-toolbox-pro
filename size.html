@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>UI vs 实车 属性对比工具</title>
+    <style>
+      :root {
+        --bg-color: #121212;
+        --panel-bg: #1e1e1e;
+      }
+      body {
+        background: var(--bg-color);
+        color: #e0e0e0;
+        font-family: "PingFang SC", sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px;
+      }
+
+      /* 核心预览区 */
+      .preview-area {
+        background: url("https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?q=80&w=2000")
+          center/cover;
+        width: 600px;
+        height: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        position: relative;
+        border: 1px solid #333;
+      }
+
+      /* 动态提示框组件 */
+      #toast-component {
+        background: rgba(45, 45, 45, 0.9);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        font-size: 18px;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* 控制面板 */
+      .controls {
+        background: var(--panel-bg);
+        padding: 25px;
+        border-radius: 15px;
+        width: 550px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .control-group {
+        display: flex;
+        display: inline-block;
+        display: inline;
+        display: inline-flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      label {
+        font-size: 12px;
+        color: #888;
+        text-transform: uppercase;
+      }
+      input[type="range"] {
+        width: 100%;
+        cursor: pointer;
+      }
+      .mode-switch {
+        grid-column: span 2;
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s;
+      }
+      .btn-ui {
+        background: #007aff;
+        color: white;
+      }
+      .btn-car {
+        background: #444;
+        color: #ccc;
+      }
+      .code-display {
+        grid-column: span 2;
+        background: #000;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 13px;
+        color: #9cdcfe;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2 style="margin-bottom: 10px">UI 还原度走查工具</h2>
+    <p style="color: #888; margin-bottom: 30px">
+      调整下方属性，观察为什么实车效果（矩形）比 UI 稿（胶囊）显得笨重
+    </p>
+
+    <div class="preview-area">
+      <div id="toast-component">仅在P挡时可用</div>
+    </div>
+
+    <div class="controls">
+      <div class="mode-switch">
+        <button class="btn-ui" onclick="setPreset('ui')">
+          切换至 UI 设计稿模式
+        </button>
+        <button class="btn-car" onclick="setPreset('car')">
+          切换至 实车 Bug 模式
+        </button>
+      </div>
+
+      <div class="control-group">
+        <label>Width (宽度): <span id="w-val">auto</span></label>
+        <input
+          type="range"
+          id="width"
+          min="150"
+          max="400"
+          value="200"
+          oninput="update()"
+        />
+      </div>
+
+      <div class="control-group">
+        <label>Height (高度): <span id="h-val">auto</span></label>
+        <input
+          type="range"
+          id="height"
+          min="40"
+          max="150"
+          value="50"
+          oninput="update()"
+        />
+      </div>
+
+      <div class="control-group">
+        <label>Border Radius (圆角): <span id="r-val">50px</span></label>
+        <input
+          type="range"
+          id="radius"
+          min="0"
+          max="75"
+          value="50"
+          oninput="update()"
+        />
+      </div>
+
+      <div class="control-group">
+        <label>Padding (内边距): <span id="p-val">20px</span></label>
+        <input
+          type="range"
+          id="padding"
+          min="0"
+          max="50"
+          value="20"
+          oninput="update()"
+        />
+      </div>
+
+      <div class="code-display" id="code-box">
+        /* 当前 CSS 属性 */<br />
+        #toast { ... }
+      </div>
+    </div>
+
+    <script>
+      const toast = document.getElementById("toast-component");
+      const codeBox = document.getElementById("code-box");
+
+      function update() {
+        const w = document.getElementById("width").value;
+        const h = document.getElementById("height").value;
+        const r = document.getElementById("radius").value;
+        const p = document.getElementById("padding").value;
+
+        // 应用样式
+        toast.style.width = isAutoWidth ? "auto" : w + "px";
+        toast.style.height = isAutoHeight ? "auto" : h + "px";
+        toast.style.borderRadius = r + "px";
+        toast.style.padding = p + "px " + p * 2 + "px";
+
+        // 更新数值显示
+        document.getElementById("w-val").innerText = toast.style.width;
+        document.getElementById("h-val").innerText = toast.style.height;
+        document.getElementById("r-val").innerText = r + "px";
+        document.getElementById("p-val").innerText = toast.style.padding;
+
+        // 更新代码块
+        codeBox.innerHTML = `
+                background: rgba(45, 45, 45, 0.9);<br>
+                <span style="color:#ce9178">width: ${toast.style.width};</span><br>
+                <span style="color:#ce9178">height: ${toast.style.height};</span><br>
+                <span style="color:#ce9178">border-radius: ${r}px;</span> /* 圆角是关键 */<br>
+                <span style="color:#ce9178">padding: ${toast.style.padding};</span>
+            `;
+      }
+
+      let isAutoWidth = true;
+      let isAutoHeight = true;
+
+      function setPreset(mode) {
+        if (mode === "ui") {
+          isAutoWidth = true;
+          isAutoHeight = true;
+          document.getElementById("radius").value = 50;
+          document.getElementById("padding").value = 12;
+          document.querySelector(".btn-ui").style.background = "#007aff";
+          document.querySelector(".btn-car").style.background = "#444";
+        } else {
+          isAutoWidth = false;
+          isAutoHeight = false;
+          document.getElementById("width").value = 280;
+          document.getElementById("height").value = 100;
+          document.getElementById("radius").value = 8;
+          document.getElementById("padding").value = 0;
+          document.querySelector(".btn-ui").style.background = "#444";
+          document.querySelector(".btn-car").style.background = "#ff4d4d";
+        }
+        update();
+      }
+
+      // 初始化
+      setPreset("ui");
+    </script>
+  </body>
+</html>

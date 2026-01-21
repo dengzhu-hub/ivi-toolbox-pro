@@ -40,6 +40,7 @@ exported_logs/
 monkey_logs/
 test_logs/
 adb_logs/
+logs/
 
 # 不要上传本地截图和录屏
 screenshots/
@@ -50,14 +51,49 @@ test_materials/
 converted_images/
 image_factory_output/
 
-# 忽略本地临时文件
-temp_*.txt
-temp_*.json
+# --- 大文件和测试数据 ---
+*.bin
+*.dat
+*.mp4
+*.sha256
+test_*.bin
+test_*.dat
+test_video_*.mp4
+small_sample.dat
+io_test_*.bin
+
+# --- 日志文件 ---
+*.log
+HMI_LOG_*.log
+hmi_log.txt
+download.log
+ui_download.log
+redmine_edge_sync.log
+ota_editor.log
+
+# --- 截图文件 ---
+*.png
+*.jpg
+*.jpeg
+hud_screenshot*.png
 
 # --- 配置文件 ---
-# 通常建议上传 config.json 的模板，但忽略包含真实 Key 的本地配置
-# 这里我们保留 config.json (作为默认模板)，但如果你有私有 Key，请取消注释下一行
-# config.json
+# 忽略实际配置，保留模板
+config_claude.json
+process_cleaner_config.json
+users.json
+app_data.json
+# 但保留示例文件
+!config.json.example
+
+# --- 临时文件 ---
+temp_*.txt
+temp_*.json
+*.tmp
+*.bak
+*~
+.DS_Store
+Thumbs.db
 
 # --- 打包产物 ---
 *.spec
@@ -68,3 +104,8 @@ temp_*.json
 adb.exe
 AdbWinApi.dll
 AdbWinUsbApi.dll
+
+# --- PowerShell 脚本 ---
+*.ps1
+# 但保留有用的脚本
+!backup_car_logs.ps1
