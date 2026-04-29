@@ -1,0 +1,815 @@
+# CMD: dumpsys audio
+# TIME: 2026-04-27 11:10:05.761864
+
+Audio event log: audio services lifecycle
+04-27 10:58:28:969 AudioService()
+
+Message handler (watch for unhandled messages):
+  Handler (com.android.server.audio.AudioService$AudioHandler) {85ffd29} @ 703313
+    Looper (AudioService, tid 94) {6b778ae}
+      (Total messages: 0, polling=true, quitting=false)
+
+MediaFocusControl dump time: 11:10:03
+
+Audio Focus stack entries (last is top of stack):
+  source:android.os.BinderProxy@777964f -- pack: com.nforetek.bt.customer.service -- client: android.media.AudioManager@9f015aecom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@4686f4f@2007@AdayoID:ADAYO_SOURCE_BT_AUDIO -- gain: GAIN_TRANSIENT -- flags: DELAY_OK -- loss: LOSS_TRANSIENT_CAN_DUCK -- notified: true -- uid: 1000 -- attr: AudioAttributes: usage=USAGE_MUSIC_BT content=CONTENT_TYPE_MUSIC flags=0x800 tags= bundle=null mAudioStreamType = 15 -- sdk:28
+
+
+No external focus policy
+
+
+
+ Notify on duck:  true
+
+ In ring or call: false
+
+
+
+Audio event log: focus commands as seen by MediaFocusControl
+04-27 10:58:30:582 abandonAudioFocus() from uid/pid 1000/1778 clientId=android.media.AudioManager@2956650com.adayo.service.sourcemngservice.versionb.Control.y.a@a92049
+04-27 10:58:30:587 abandonAudioFocus() from uid/pid 1000/1778 clientId=android.media.AudioManager@2956650com.adayo.service.sourcemngservice.versionb.Control.y.a@a92049
+04-27 10:58:30:593 abandonAudioFocus() from uid/pid 1000/1778 clientId=android.media.AudioManager@2956650com.adayo.service.sourcemngservice.versionb.Control.y.a@a92049
+04-27 10:58:30:600 abandonAudioFocus() from uid/pid 1000/1778 clientId=android.media.AudioManager@2956650com.adayo.service.sourcemngservice.versionb.Control.y.a@a92049
+04-27 10:59:25:730 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@154aa28@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 10:59:32:699 requestAudioFocus() from uid/pid 1000/2007 clientId=android.media.AudioManager@9f015aecom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@4686f4f@2007@AdayoID:ADAYO_SOURCE_BT_AUDIO callingPack=com.nforetek.bt.customer.service req=2 flags=0x1 sdk=28
+04-27 10:59:51:848 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@154aa28@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 10:59:51:874 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@d748b35@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 10:59:58:886 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@d748b35@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:00:01:135 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@cb5dc43@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 11:00:05:468 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@cb5dc43@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:00:06:671 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@613d94e@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 11:00:10:106 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@613d94e@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:00:10:686 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@3e03e61@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 11:00:13:525 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@3e03e61@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:00:16:844 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@65b1779@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 11:00:19:113 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@65b1779@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:00:20:495 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@f439aa0@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 11:00:23:935 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@f439aa0@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:00:26:543 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@58ceffb@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 11:00:29:978 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@58ceffb@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:00:55:748 requestAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@18da987@2454@AdayoID:ADAYO_SOURCE_RVC callingPack=com.adayo.aaop_deviceservice req=3 flags=0x0 sdk=30
+04-27 11:01:15:941 abandonAudioFocus() from uid/pid 1000/2454 clientId=android.media.AudioManager@1f9804bcom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@18da987@2454@AdayoID:ADAYO_SOURCE_RVC
+04-27 11:02:50:444 requestAudioFocus() from uid/pid 1000/2007 clientId=android.media.AudioManager@9f015aecom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@4686f4f@2007@AdayoID:ADAYO_SOURCE_BT_AUDIO callingPack=com.nforetek.bt.customer.service req=2 flags=0x1 sdk=28
+04-27 11:05:37:510 requestAudioFocus() from uid/pid 1000/2007 clientId=android.media.AudioManager@9f015aecom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@4686f4f@2007@AdayoID:ADAYO_SOURCE_BT_AUDIO callingPack=com.nforetek.bt.customer.service req=2 flags=0x1 sdk=28
+04-27 11:05:54:807 requestAudioFocus() from uid/pid 1000/2007 clientId=android.media.AudioManager@9f015aecom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@4686f4f@2007@AdayoID:ADAYO_SOURCE_BT_AUDIO callingPack=com.nforetek.bt.customer.service req=2 flags=0x1 sdk=28
+04-27 11:07:01:623 requestAudioFocus() from uid/pid 1000/2007 clientId=android.media.AudioManager@9f015aecom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@4686f4f@2007@AdayoID:ADAYO_SOURCE_BT_AUDIO callingPack=com.nforetek.bt.customer.service req=2 flags=0x1 sdk=28
+04-27 11:07:03:429 requestAudioFocus() from uid/pid 1000/2007 clientId=android.media.AudioManager@9f015aecom.adayo.proxy.infrastructure.sourcemng.Beans.AdayoAudioFocus$1@4686f4f@2007@AdayoID:ADAYO_SOURCE_BT_AUDIO callingPack=com.nforetek.bt.customer.service req=2 flags=0x1 sdk=28
+Multi Audio Focus enabled :false
+
+Stream volumes (device: index)
+- STREAM_VOICE_CALL:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:29
+   Current: 2 (speaker): 29, 100000 (speaker_sub): 29, 1000000 (bus): 29, 4000000 (speaker_main_second): 29, 8000000 (speaker_main_third): 29, 20000000 (speaker_main_fourth): 29, 40000000 (default): 29
+   Devices: speaker
+- STREAM_SYSTEM:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:10
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 10, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_RING:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:18
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 18, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_MUSIC:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_ALARM:
+   Muted: false
+   Muted Internally: false
+   Min: 0 w/o perm:7
+   Max: 39
+   streamVolume:28
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 28, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_NOTIFICATION:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:28
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 28, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_BLUETOOTH_SCO:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_SYSTEM_ENFORCED:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:16
+   Current: 40000000 (default): 16
+   Devices: speaker
+- STREAM_DTMF:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:18
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 18, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_TTS:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:28
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 28, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_ACCESSIBILITY:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_NAVI:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:25
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 25, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_RADAR:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:15
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 15, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_INSTRUMENT:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:15
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 15, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_VOICE_CAR:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:28
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 28, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_MUSIC_BT:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_AUX:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_VR:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:28
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 28, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_FM:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_WARNING:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 12, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_sub
+- STREAM_MIC_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_REPORT_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_EX_MIC_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_MUSIC_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_MUSIC_BT_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_AUX_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_FM_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+- STREAM_MIC_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_main_third
+- STREAM_REPORT_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:22
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 22, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_main_third
+- STREAM_WARNING_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_main_third
+- STREAM_ALARM_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_main_third
+- STREAM_MIC_4:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_REPORT_4:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_WARNING_4:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_RADAR_4:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_NAVI_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 12, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_NAVI_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_main_third
+- STREAM_MUSIC_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker_main_third
+- STREAM_MUSIC_BT_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker_main_third
+- STREAM_AUX_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker_main_third
+- STREAM_FM_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:12
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 12, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_main_third
+- STREAM_SYSTEM_2:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:16
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker
+- STREAM_SYSTEM_3:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:16
+   Current: 2 (speaker): 16, 100000 (speaker_sub): 16, 1000000 (bus): 16, 4000000 (speaker_main_second): 16, 8000000 (speaker_main_third): 16, 20000000 (speaker_main_fourth): 16, 40000000 (default): 16
+   Devices: speaker_main_third
+- STREAM_ASSISTANT:
+   Muted: false
+   Muted Internally: false
+   Min: 0
+   Max: 39
+   streamVolume:39
+   Current: 2 (speaker): 39, 100000 (speaker_sub): 39, 1000000 (bus): 39, 4000000 (speaker_main_second): 39, 8000000 (speaker_main_third): 39, 20000000 (speaker_main_fourth): 39, 40000000 (default): 39
+   Devices: speaker
+
+- mute affected streams = 0x2fa6f
+
+Volume Groups (device: index)
+- VOLUME GROUP AUDIO_STREAM_VOICE_CALL:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 29
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_SYSTEM:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_RING:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_MUSIC:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_ALARM:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_NOTIFICATION:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_BLUETOOTH_SCO:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_ENFORCED_AUDIBLE:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_DTMF:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_TTS:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_ACCESSIBILITY:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_NAVI:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_RADAR:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_INSTRUMENT:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_VOICE_CAR:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_MUSIC_BT:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_AUX:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_VR:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_FM:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_WARNING:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_sub
+- VOLUME GROUP AUDIO_STREAM_MIC_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_REPORT_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_EX_MIC_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_MUSIC_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_MUSIC_BT_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_AUX_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_FM_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_MIC_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_REPORT_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_WARNING_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_ALARM_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_NAVI_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_NAVI_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_MUSIC_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_MUSIC_BT_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_AUX_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_FM_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_SYSTEM_2:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker
+- VOLUME GROUP AUDIO_STREAM_SYSTEM_3:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 16
+   Devices: speaker_main_third
+- VOLUME GROUP AUDIO_STREAM_ASSISTANT:
+   Min: 0
+   Max: 39
+   Current: 40000000 (default): 39
+   Devices: speaker
+
+Ringer mode: 
+- mode (internal) = NORMAL
+- mode (external) = NORMAL
+- zen mode:ZEN_MODE_OFF
+- ringer mode affected streams = 0x1a6 (STREAM_SYSTEM,STREAM_RING,STREAM_NOTIFICATION,STREAM_SYSTEM_ENFORCED,STREAM_DTMF)
+- ringer mode muted streams = 0x0
+- delegate = ZenModeHelper
+
+Audio routes:
+  mMainType=0x0
+  mBluetoothName=null
+
+Other state:
+  mVolumeController=VolumeController(null,mVisible=false)
+  mSafeMediaVolumeState=SAFE_MEDIA_VOLUME_DISABLED
+  mSafeMediaVolumeIndex=100
+  mSafeUsbMediaVolumeIndex=60
+  mSafeUsbMediaVolumeDbfs=-37.0
+  sIndependentA11yVolume=false
+  mPendingVolumeCommand=null
+  mMusicActiveMs=0
+  mMcc=0
+  mCameraSoundForced=false
+  mHasVibrator=false
+  mVolumePolicy=VolumePolicy[volumeDownToEnterSilent=false,volumeUpToExitSilent=false,doNotDisturbWhenSilent=false,vibrateToSilentDebounce=400]
+  mAvrcpAbsVolSupported=false
+  mIsSingleVolume=false
+  mUseFixedVolume=false
+  mFixedVolumeDevices=0x1000,0x800,0x200000,0x40000,0x80000
+  mExtVolumeController=null
+  mHdmiCecSink=false
+  mHdmiAudioSystemClient=null
+  mHdmiPlaybackClient=null
+  mHdmiTvClient=null
+  mHdmiSystemAudioSupported=false
+  mHdmiCecVolumeControlEnabled=false
+  mIsCallScreeningModeSupported=false
+  mic mute FromSwitch=false FromRestrictions=false FromApi=false from system=false
+Audio policies:
+Audio event log: dynamic policy events (logged when command received by AudioService)
+
+PlaybackActivityMonitor dump time: 11:10:03
+
+  playback listeners:
+ (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@5242e5 (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@58671ba (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@c1486b
+
+
+  players:
+  AudioPlaybackConfiguration piid:15 sessionid:0 type:android.media.SoundPool u/pid:1000/1215 state:idle attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null mAudioStreamType = 3
+  AudioPlaybackConfiguration piid:23 sessionid:9 type:android.media.AudioTrack u/pid:1000/2454 state:idle attr:AudioAttributes: usage=USAGE_WARNING_3 content=CONTENT_TYPE_MUSIC flags=0x800 tags= bundle=null mAudioStreamType = 3
+  AudioPlaybackConfiguration piid:31 sessionid:17 type:android.media.MediaPlayer u/pid:1000/2454 state:idle attr:AudioAttributes: usage=USAGE_TTS content=CONTENT_TYPE_SONIFICATION flags=0x808 tags= bundle=null mAudioStreamType = 9
+  AudioPlaybackConfiguration piid:39 sessionid:0 type:android.media.SoundPool u/pid:1000/3734 state:idle attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_UNKNOWN flags=0x800 tags= bundle=null mAudioStreamType = 3
+  AudioPlaybackConfiguration piid:47 sessionid:0 type:android.media.SoundPool u/pid:1000/4215 state:idle attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null mAudioStreamType = 1
+
+  ducked players piids:
+
+  muted player piids:
+
+  banned uids:
+
+Audio event log: playback activity as reported through PlayerBase
+04-27 10:58:29:681 new player piid:15 uid/pid:1000/1215 type:android.media.SoundPool attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null mAudioStreamType = 3
+04-27 10:58:31:962 new player piid:23 uid/pid:1000/2454 type:android.media.AudioTrack attr:AudioAttributes: usage=USAGE_WARNING_3 content=CONTENT_TYPE_MUSIC flags=0x800 tags= bundle=null mAudioStreamType = 3
+04-27 10:58:33:207 new player piid:31 uid/pid:1000/2454 type:android.media.MediaPlayer attr:AudioAttributes: usage=USAGE_UNKNOWN content=CONTENT_TYPE_UNKNOWN flags=0x800 tags= bundle=null mAudioStreamType = 3
+04-27 10:58:33:260 player piid:31 new AudioAttributes:AudioAttributes: usage=USAGE_TTS content=CONTENT_TYPE_SONIFICATION flags=0x808 tags= bundle=null mAudioStreamType = 9
+04-27 10:58:36:979 new player piid:39 uid/pid:1000/3734 type:android.media.SoundPool attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_UNKNOWN flags=0x800 tags= bundle=null mAudioStreamType = 3
+04-27 10:58:37:011 new player piid:47 uid/pid:1000/4215 type:android.media.SoundPool attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null mAudioStreamType = 1
+04-27 11:04:21:552 player piid:15 state:started
+04-27 11:06:49:428 player piid:15 state:started
+04-27 11:06:51:220 player piid:15 state:started
+04-27 11:07:01:625 player piid:15 state:started
+
+  allowed capture policies:
+
+RecordActivityMonitor dump time: 11:10:03
+
+
+Audio event log: recording activity received by AudioService
+
+AudioDeviceBroker:
+  Message handler (watch for unhandled messages):
+    Handler (com.android.server.audio.AudioDeviceBroker$BrokerHandler) {41e9fc8} @ 703409
+      Looper (AudioDeviceBroker, tid 95) {2692861}
+        (Total messages: 0, polling=true, quitting=false)
+
+  Preferred devices for strategy:
+
+  Connected devices:
+
+  APM Connected device (A2DP sink only):
+
+  mForcedUseForComm: FORCE_NONE
+  mForcedUseForCommExt: FORCE_NONE
+  mModeOwnerPid: 0
+  Speakerphone clients:
+
+  mBluetoothHeadset: null
+  mBluetoothHeadsetDevice: null
+  mScoAudioState: SCO_STATE_INACTIVE
+  mScoAudioMode: SCO_MODE_VIRTUAL_CALL
+  Sco clients:
+
+  mHearingAid: null
+  mA2dp: null
+  mAvrcpAbsVolSupported: false
+
+SoundEffects:
+  Message handler (watch for unhandled messages):
+  Handler (com.android.server.audio.SoundEffectsHelper$SfxHandler) {d19ef86} @ 703410
+    Looper (AS.SfxWorker, tid 93) {2aa0047}
+      (Total messages: 0, polling=true, quitting=false)
+  Default attenuation (dB): -6
+Audio event log: Sound Effects Loading
+04-27 10:58:29:680 effects loading started
+04-27 10:58:30:382 effect Effect_Tick.wav loaded
+04-27 10:58:30:405 effect Effect_Tick.ogg loaded
+04-27 10:58:30:467 effect KeypressStandard.ogg loaded
+04-27 10:58:30:493 effect KeypressSpacebar.ogg loaded
+04-27 10:58:30:562 effect KeypressDelete.ogg loaded
+04-27 10:58:30:592 effect KeypressReturn.ogg loaded
+04-27 10:58:30:642 effect KeypressInvalid.ogg loaded
+04-27 10:58:30:664 effect KeyPressPhoneNum0.wav loaded
+04-27 10:58:30:708 effect KeyPressPhoneNum1.wav loaded
+04-27 10:58:30:753 effect KeyPressPhoneNum2.wav loaded
+04-27 10:58:30:782 effect KeyPressPhoneNum3.wav loaded
+04-27 10:58:30:811 effect KeyPressPhoneNum4.wav loaded
+04-27 10:58:30:846 effect KeyPressPhoneNum5.wav loaded
+04-27 10:58:30:922 effect KeyPressPhoneNum7.wav loaded
+04-27 10:58:30:934 effect KeyPressPhoneNum6.wav loaded
+04-27 10:58:30:997 effect KeyPressPhoneNum8.wav loaded
+04-27 10:58:31:032 effect KeyPressPhoneNum9.wav loaded
+04-27 10:58:31:088 effect KeyPressPhoneNum11.wav loaded
+04-27 10:58:31:088 effect KeyPressPhoneNum10.wav loaded
+04-27 10:58:31:088 effects loading completed
+
+
+
+Event logs:
+Audio event log: phone state (logged after successful call to AudioSystem.setPhoneState(int, int))
+
+
+Audio event log: wired/A2DP/hearing aid device connection
+
+
+Audio event log: force use (logged before setForceUse() is executed)
+04-27 10:58:29:002 setForceUse(FOR_SYSTEM, FORCE_NONE) due to AudioService ctor
+04-27 10:58:29:004 setForceUse(FOR_ENCODED_SURROUND, FORCE_NONE) due to readPersistedSettings
+04-27 10:58:29:005 setForceUse(FOR_DOCK, FORCE_ANALOG_DOCK) due to readDockAudioSettings
+04-27 10:58:29:413 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/1215
+04-27 10:58:29:681 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/1215
+04-27 10:58:29:682 setForceUse(FOR_COMMUNICATION, FORCE_NONE) due to resetBluetoothSco
+04-27 10:58:29:682 setForceUse(FOR_RECORD, FORCE_NONE) due to resetBluetoothSco
+04-27 10:58:30:144 setForceUse(FOR_ENCODED_SURROUND, FORCE_NONE) due to readPersistedSettings
+04-27 10:58:30:144 setForceUse(FOR_DOCK, FORCE_ANALOG_DOCK) due to readDockAudioSettings
+04-27 10:58:30:232 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/1215
+04-27 10:58:32:569 setForceUse(FOR_COMMUNICATION, FORCE_NONE) due to resetBluetoothSco
+04-27 10:58:32:570 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/1215
+04-27 10:58:32:570 setForceUse(FOR_RECORD, FORCE_NONE) due to resetBluetoothSco
+
+
+Audio event log: volume changes (logged when command received by AudioService)
+04-27 10:58:31:431 setStreamVolume(stream:STREAM_SYSTEM index:10 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:439 setStreamVolume(stream:STREAM_RING index:18 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:454 setStreamVolume(stream:STREAM_ALARM index:28 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:457 setStreamVolume(stream:STREAM_NOTIFICATION index:28 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:462 setStreamVolume(stream:STREAM_TTS index:28 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:465 adjustStreamVolume(stream:STREAM_NAVI dir:ADJUST_UNMUTE flags:0x0) from com.adayo.aaop_deviceservice
+04-27 10:58:31:467 setStreamVolume(stream:STREAM_NAVI index:25 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:469 setStreamVolume(stream:STREAM_RADAR index:15 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:491 setStreamVolume(stream:STREAM_INSTRUMENT index:15 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:495 setStreamVolume(stream:STREAM_VOICE_CAR index:28 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:502 setStreamVolume(stream:STREAM_VR index:28 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:508 setStreamVolume(stream:STREAM_WARNING index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:510 setStreamVolume(stream:STREAM_MIC_2 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:512 setStreamVolume(stream:STREAM_REPORT_2 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:516 setStreamVolume(stream:STREAM_EX_MIC_2 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:519 setStreamVolume(stream:STREAM_MUSIC_2 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:587 setStreamVolume(stream:STREAM_MIC_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:592 setStreamVolume(stream:STREAM_REPORT_3 index:22 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:597 setStreamVolume(stream:STREAM_WARNING_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:602 setStreamVolume(stream:STREAM_ALARM_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:605 setStreamVolume(stream:STREAM_MIC_4 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:610 setStreamVolume(stream:STREAM_REPORT_4 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:614 setStreamVolume(stream:STREAM_WARNING_4 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:617 setStreamVolume(stream:STREAM_RADAR_4 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:619 setStreamVolume(stream:STREAM_NAVI_2 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:631 setStreamVolume(stream:STREAM_NAVI_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:633 setStreamVolume(stream:STREAM_MUSIC_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:635 setStreamVolume(stream:STREAM_MUSIC_BT_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:637 setStreamVolume(stream:STREAM_AUX_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+04-27 10:58:31:641 setStreamVolume(stream:STREAM_FM_3 index:12 flags:0x4) from com.adayo.aaop_deviceservice
+
+
+Supported System Usages:
+	USAGE_CALL_ASSISTANT
+	USAGE_EMERGENCY
+	USAGE_SAFETY
+	USAGE_VEHICLE_STATUS
+	USAGE_ANNOUNCEMENT

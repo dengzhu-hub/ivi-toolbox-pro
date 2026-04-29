@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>工程模式解锁码</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Consolas', monospace;
+        }
+        .label { font-size: 2rem; color: #aaa; margin-bottom: 10px; }
+        .vin { font-size: 3rem; color: #00ff00; margin-bottom: 50px; text-shadow: 0 0 20px #00ff00; }
+        .pwd-card {
+            background: #ff0000;
+            padding: 40px 80px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px #ff0000;
+            animation: pulse 2s infinite;
+        }
+        .pwd {
+            font-size: 6rem;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 5px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 50px #ff0000; }
+            50% { transform: scale(1.05); box-shadow: 0 0 100px #ff0000; }
+            100% { transform: scale(1); box-shadow: 0 0 50px #ff0000; }
+        }
+        .time { margin-top: 30px; color: #666; font-size: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="label">当前车辆 VIN</div>
+    <div class="vin">LNKBJG13642GFR004356</div>
+
+    <div class="label" style="color: #ff4444;">今日动态解锁码</div>
+    <div class="pwd-card">
+        <div class="pwd">892B70ED30E320260127</div>
+    </div>
+
+    <div class="time">生成时间: 2026-01-27 15:58:15</div>
+    <button onclick="location.reload()" style="margin-top:40px; padding:10px 20px; cursor:pointer;">刷新数据</button>
+</body>
+</html>

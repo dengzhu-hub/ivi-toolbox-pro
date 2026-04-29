@@ -1,0 +1,6 @@
+# CMD: getprop | grep volume
+# TIME: 2026-04-27 11:10:16.192089
+
+[persist.volume.shaper.system.duck.able]: [0]
+[vendor.audio.feature.usb_offload_sidetone_volume.enable]: [false]
+[vendor.audio.volume.headset.gain.depcal]: [true]

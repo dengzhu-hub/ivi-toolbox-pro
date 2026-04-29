@@ -1534,7 +1534,7 @@ class LogcatAnalyzer:
 
 
 # ==========================================
-# 4. 数据处理引擎 - 健壮性与纠错能力
+# 4. 数据处理引擎 - 健壮性与纠错能力 (终极修复版)
 # ==========================================
 class IVIMetricsEngine:
     def __init__(self, source: BaseSource, whitelist_path="whitelist.txt"):
@@ -1546,12 +1546,10 @@ class IVIMetricsEngine:
         }
 
     def _load_whitelist(self, path) -> List[str]:
-        """解析白名单并自动清洗干扰字符"""
         if not os.path.exists(path):
             return []
         try:
             with open(path, "r", encoding="utf-8") as f:
-                # 针对 等元数据进行正则清洗
                 return [
                     re.search(r"([a-zA-Z0-9._]+)$", l.strip()).group(1)
                     for l in f
@@ -1563,74 +1561,245 @@ class IVIMetricsEngine:
     def refresh(self):
         """高效数据采集序列 - 增强容错"""
         try:
-            # 1. 系统负载
-            uptime = self.source.run_command("uptime", use_root=True)
+            # 1. 放弃使用 use_root=True (避免因 su 管道问题导致命令无输出)
+            uptime = self.source.run_command("uptime")
             load = re.search(r"average:\s+([\d.]+),?\s+([\d.]+),?\s+([\d.]+)", uptime)
             if load:
                 self.snapshot["sys"]["load"] = load.groups()
-            else:
-                self.snapshot["sys"]["load"] = ("0.00", "0.00", "0.00")
 
-            # 2. 存储健康度
-            df = self.source.run_command("df -h /data", use_root=True)
+            df = self.source.run_command("df -h /data")
             storage = re.search(r"(\d+)%", df)
             if storage:
                 self.snapshot["sys"]["storage"] = f"{storage.group(1)}%"
-            else:
-                self.snapshot["sys"]["storage"] = "N/A"
 
-            # 3. 进程监控 (核心修复点)
-            top_raw = self.source.run_command("top -b -n 1", use_root=True)
+            # 2. 尝试多次 top 策略 (防 ANSI 乱码)
+            top_raw = self.source.run_command("top -b -n 1")
 
-            # 【新增】如果 top 命令失败，尝试降级方案
-            if not top_raw or len(top_raw) < 50:
-                # 降级方案：使用 ps 命令
-                top_raw = self.source.run_command(
-                    "ps -A -o PID,CPU,MEM,COMMAND", use_root=True
-                )
+            # 如果不支持 -b 导致报错，降级使用标准 top
+            if not top_raw or "bad" in top_raw.lower() or "illegal" in top_raw.lower():
+                top_raw = self.source.run_command("top -n 1")
+
+            # 清理可能存在的终端 ANSI 转义字符 (核心修复，防止正则解析失败)
+            ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+            top_raw = ansi_escape.sub("", top_raw)
+
+            # 如果彻底没拿到数据，使用 ps 降级
+            if len(top_raw.splitlines()) < 5:
+                top_raw = self.source.run_command("ps -A")
 
             self._parse_top(top_raw)
 
         except Exception as e:
-            # 容错：即使采集失败也不崩溃
             self.snapshot["apps"] = []
-            print(f"[DEBUG] Refresh error: {e}")  # 调试用
 
     def _parse_top(self, raw_data: str):
-        # 适配你发出来的 top 格式：Mem: 11382248K total, 10279672K used
-        mem_match = re.search(r"Mem:\s+(\d+)K total,\s+(\d+)K used", raw_data)
+        # 解析总体内存占比
+        mem_match = re.search(
+            r"Mem:\s+(\d+)[KkMmGg]? total,\s+(\d+)[KkMmGg]? used", raw_data
+        )
         if mem_match:
             total = int(mem_match.group(1))
             used = int(mem_match.group(2))
-            self.snapshot["sys"]["ram_pct"] = round((used / total) * 100, 1)
+            if total > 0:
+                self.snapshot["sys"]["ram_pct"] = round((used / total) * 100, 1)
 
         app_list = []
-        # 如果白名单为空，默认抓取 top 5 消耗最高的进程作为展示，防止界面留白
-        search_list = self.whitelist if self.whitelist else []
+        for line in raw_data.splitlines():
+            line = line.strip()
+            if not line or "PID" in line or "Mem:" in line or "Tasks:" in line:
+                continue
 
-        for pkg in search_list:
-            # 兼容你的 top 输出格式
-            pattern = rf"(\d+)\s+.*?\s+([\d,.]+[MGK]?)\s+.*?\s+(\d+[.]?\d*)\s+.*?\s+{re.escape(pkg)}"
-            match = re.search(pattern, raw_data)
-            if match:
-                mem_val = self._normalize_mem(match.group(2))
-                app_list.append(
-                    {"name": pkg, "cpu": f"{match.group(3)}%", "mem": mem_val}
-                )
+            parts = line.split()
+            # top 或 ps 输出通常包含 8 列以上
+            if len(parts) >= 8:
+                try:
+                    pkg_name = parts[-1]
 
-        self.snapshot["apps"] = sorted(app_list, key=lambda x: x["mem"], reverse=True)
+                    # 过滤噪音进程
+                    if pkg_name.startswith("[") or pkg_name in (
+                        "top",
+                        "su",
+                        "sh",
+                        "adbd",
+                        "logcat",
+                        "init",
+                        "ps",
+                    ):
+                        continue
+                    if self.whitelist and not any(
+                        w in pkg_name for w in self.whitelist
+                    ):
+                        continue
+
+                    # 提取 CPU
+                    cpu_matches = re.findall(r"\b(\d+\.\d+)\b", line)
+                    cpu_val = cpu_matches[0] if cpu_matches else "0.0"
+
+                    # 提取内存
+                    mem_matches = re.findall(r"\b(\d+[.]?\d*[MGKmgk])\b", line)
+                    if mem_matches:
+                        mem_val = self._normalize_mem(mem_matches[0].upper())
+                    else:
+                        # 兜底：如果没带单位 (如 ps -A)，假设纯数字列为 RSS(KB)
+                        nums = [p for p in parts[3:-1] if p.isdigit()]
+                        if nums:
+                            mem_val = float(nums[-1]) / 1024.0
+                        else:
+                            mem_val = 0.0
+
+                    app_list.append(
+                        {"name": pkg_name, "cpu": f"{cpu_val}%", "mem": mem_val}
+                    )
+                except Exception:
+                    continue
+
+        app_list = sorted(app_list, key=lambda x: x["mem"], reverse=True)
+
+        if not self.whitelist:
+            # 自动去重合并 (处理多进程同包名问题，如 com.adayo.xxx:core)
+            merged = {}
+            for app in app_list:
+                name = app["name"]
+                if name not in merged:
+                    merged[name] = app
+                else:
+                    merged[name]["mem"] += app["mem"]
+                    try:
+                        merged[name][
+                            "cpu"
+                        ] = f"{float(merged[name]['cpu'].strip('%')) + float(app['cpu'].strip('%')):.1f}%"
+                    except:
+                        pass
+
+            unique_list = list(merged.values())
+            unique_list = sorted(unique_list, key=lambda x: x["mem"], reverse=True)
+            self.snapshot["apps"] = unique_list[:15]
+        else:
+            self.snapshot["apps"] = app_list
 
     def _normalize_mem(self, val: str) -> float:
-        """单位换算纠错 (G/M/K -> MB)"""
         try:
             val = val.replace(",", "")
             if "G" in val:
                 return float(val.replace("G", "")) * 1024
             if "M" in val:
                 return float(val.replace("M", ""))
+            if "K" in val:
+                return float(val.replace("K", "")) / 1024
             return float(val) / 1024
         except:
             return 0.0
+
+
+class AdvancedSentinelUI:
+    def __init__(self, engine: IVIMetricsEngine, console: Console):
+        self.engine = engine
+        self.console = console
+
+    def _make_layout(self) -> Layout:
+        layout = Layout()
+        layout.split_column(
+            Layout(name="header", size=3),
+            Layout(name="main", ratio=1),
+            Layout(name="footer", size=3),
+        )
+        layout["main"].split_row(
+            Layout(name="side", ratio=1), Layout(name="body", ratio=2)
+        )
+        return layout
+
+    def _render_all(self, layout: Layout):
+        layout["header"].update(
+            Panel(
+                Text.assemble(
+                    (" 🛰️ IVI SENTINEL PRO ", "bold white on blue"),
+                    (
+                        f" | DEVICE: {self.engine.source.device_id or 'Connecting...'} | ",
+                        "cyan",
+                    ),
+                    (datetime.now().strftime("%H:%M:%S"), "yellow"),
+                ),
+                border_style="blue",
+            )
+        )
+
+        sys = self.engine.snapshot["sys"]
+        sys_grid = Table.grid(expand=True)
+        sys_grid.add_row(
+            "🔥 [bold]CPU Load:[/]",
+            f"[yellow]{' / '.join(sys.get('load', ['0.0','0.0','0.0']))}[/]",
+        )
+        sys_grid.add_row(
+            "🧠 [bold]RAM Used:[/]", f"[bold cyan]{sys.get('ram_pct', 0)}%[/]"
+        )
+        sys_grid.add_row(
+            "💾 [bold]Storage:[/]", f"[magenta]{sys.get('storage', 'N/A')}[/]"
+        )
+        layout["side"].update(
+            Panel(sys_grid, title="[bold]System Status", border_style="cyan")
+        )
+
+        app_table = Table(
+            title="[bold green]Top Process Activity[/bold green]", expand=True
+        )
+        app_table.add_column("Package Name", style="white")
+        app_table.add_column("CPU", justify="right", style="green")
+        app_table.add_column("Memory (RES MB)", justify="right", style="magenta")
+
+        apps = self.engine.snapshot.get("apps", [])
+        if not apps:
+            app_table.add_row("[dim]Waiting for data / Syncing...[/]", "-", "-")
+        else:
+            for app in apps[:15]:
+                app_table.add_row(app["name"], app["cpu"], f"{app['mem']:.1f}")
+
+        layout["body"].update(app_table)
+
+        layout["footer"].update(
+            Panel(
+                " [Q/Ctrl+C] 退出监控 | 实时刷新率: 2Hz | Auto-Merge: ON ",
+                title="Quick Actions",
+                border_style="dim",
+            )
+        )
+
+    def start(self):
+        layout = self._make_layout()
+        self.console.print(
+            "[bold yellow]🚀 正在连接设备并拉取首帧数据，请稍候...[/bold yellow]"
+        )
+
+        try:
+            self.engine.refresh()
+
+            # 移除阻塞界面的 Prompt.ask，改为自动降级执行
+            if not self.engine.snapshot["apps"]:
+                self.console.print(
+                    "[bold red]⚠️ 警告: 未能获取初始进程数据，将尝试持续重试...[/bold red]"
+                )
+                time.sleep(1.5)
+            else:
+                self.console.print(
+                    f"[green]✓ 成功加载 {len(self.engine.snapshot['apps'])} 个进程[/green]"
+                )
+                time.sleep(0.5)
+
+        except Exception as e:
+            self.console.print(f"[bold red]数据采集异常: {e}[/bold red]")
+            time.sleep(1.5)
+
+        self._render_all(layout)
+
+        with Live(
+            layout, refresh_per_second=2, screen=True, console=self.console
+        ) as live:
+            try:
+                while True:
+                    self.engine.refresh()
+                    self._render_all(layout)
+                    time.sleep(0.5)
+            except KeyboardInterrupt:
+                pass
 
 
 class AdvancedSentinelUI:
@@ -4537,173 +4706,944 @@ class ImageConverter:
             os.startfile(save_dir)
         Prompt.ask("按回车返回")
 
+# ============================================================
+# IVI TOOLBOX PRO — MonkeyTester v2.0 完整集成方案
+# ============================================================
+# 修复内容:
+#   [BUG-1] run_test() 第5024行 continue 截断全部实时逻辑
+#   [BUG-2] _kill_monkey() 进程残留 + 无确认等待
+#   [BUG-3] config 字典未接入 ConfigLoader，重启后丢失
+# 优化内容:
+#   [OPT-1] 事件配比支持可视化菜单配置
+#   [OPT-2] Crash/ANR 正则精准检测，消除误报
+#   [OPT-3] 异常时自动截图存证
+#   [OPT-4] HTML/JSON 双格式测试报告生成
+#   [OPT-5] 应用搜索支持多轮累加选择
+#   [OPT-6] Android 版本预检，屏蔽不兼容参数
+# 新功能:
+#   [NEW-1] 多轮对比压测 (Baseline vs Stress)
+#   [NEW-2] Crash 自动复现引擎 (Seed + Log + Screenshot)
+#   [NEW-3] IVI 专属场景预置模板 (媒体/导航/蓝牙等)
+#   [NEW-4] 实时内存/CPU 联动监控
+#   [NEW-5] 智能事件配比推荐
+#   [NEW-6] 历史测试记录管理与对比视图
+# ============================================================
 
-# ==========================================
-# [新增] 核心模块: Monkey 压力测试专家
-# ==========================================
-# ==========================================
-# [升级] 核心模块: Monkey 压力测试专家 (带日志持久化)
-# ==========================================
+import os
+import re
+import sys
+import json
+import time
+import platform
+import threading
+import subprocess
+from datetime import datetime
+from typing import Optional, List, Tuple, Dict
+
+# ---- 以下 import 与主工程共享，集成时无需重复 ----
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.live import Live
+from rich.prompt import Prompt
+from rich.align import Align
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    BarColumn,
+    TimeElapsedColumn,
+)
+from rich import box
+
+
+# ============================================================
+# 辅助子系统 A: 日志智能分析器
+# ============================================================
+class MonkeyLogAnalyzer:
+    """
+    独立的 Monkey 日志分析子系统 (单一职责)
+    负责: Crash/ANR 精准解析、去重、报告生成
+    """
+
+    # 精准正则: 匹配 Monkey 官方输出格式
+    CRASH_RE = re.compile(r"// CRASH:\s*([\w.]+)")
+    ANR_RE = re.compile(r"// NOT RESPONDING:\s*([\w.]+)")
+    INJECT_RE = re.compile(r"Events injected:\s*(\d+)")
+    SEED_RE = re.compile(r"// args: \[.*?-s\s+(\d+)")
+
+    def __init__(self):
+        self.crashes: List[Dict] = []  # [{pkg, count, timestamp}]
+        self.anrs: List[Dict] = []
+        self.events_injected: int = 0
+        self.seed_used: Optional[str] = None
+        self._crash_counter: Dict[str, int] = {}
+        self._anr_counter: Dict[str, int] = {}
+
+    def feed(self, line: str):
+        """逐行喂入日志，实时更新统计"""
+        # Crash 精准检测
+        # 在 MonkeyLogAnalyzer.feed() 里加
+        if line.startswith(":Sending") or line.startswith(":Dispatching"):
+            self.events_injected += 1
+            return "progress", self.events_injected
+        m = self.CRASH_RE.search(line)
+        if m:
+            pkg = m.group(1)
+            self._crash_counter[pkg] = self._crash_counter.get(pkg, 0) + 1
+            self.crashes.append({"pkg": pkg, "ts": datetime.now().isoformat()})
+            return "crash", pkg
+
+        # ANR 精准检测
+        m = self.ANR_RE.search(line)
+        if m:
+            pkg = m.group(1)
+            self._anr_counter[pkg] = self._anr_counter.get(pkg, 0) + 1
+            self.anrs.append({"pkg": pkg, "ts": datetime.now().isoformat()})
+            return "anr", pkg
+
+        # 进度解析
+        m = self.INJECT_RE.search(line)
+        if m:
+            self.events_injected = int(m.group(1))
+            return "progress", self.events_injected
+
+        # Seed 提取 (用于复现)
+        m = self.SEED_RE.search(line)
+        if m and not self.seed_used:
+            self.seed_used = m.group(1)
+
+        return None, None
+
+    @property
+    def crash_count(self) -> int:
+        return len(self.crashes)
+
+    @property
+    def anr_count(self) -> int:
+        return len(self.anrs)
+
+    def top_crashes(self, n=3) -> List[Tuple[str, int]]:
+        return sorted(self._crash_counter.items(), key=lambda x: -x[1])[:n]
+
+    def top_anrs(self, n=3) -> List[Tuple[str, int]]:
+        return sorted(self._anr_counter.items(), key=lambda x: -x[1])[:n]
+
+    def to_dict(self, meta: dict) -> dict:
+        return {
+            "meta": meta,
+            "summary": {
+                "total_crash": self.crash_count,
+                "total_anr": self.anr_count,
+                "events_injected": self.events_injected,
+                "seed_used": self.seed_used,
+            },
+            "top_crashes": self.top_crashes(),
+            "top_anrs": self.top_anrs(),
+            "crash_detail": self.crashes,
+            "anr_detail": self.anrs,
+        }
+    # ╔══════════════════════════════════════════════════════════╗
+    # ║  PATCH-3: generate_html_report() (完整替换)              ║
+    # ║  位置: MonkeyLogAnalyzer 类内，原第 4847~4957 行         ║
+    # ╚══════════════════════════════════════════════════════════╝
+    def generate_html_report(
+        self, meta: dict, log_path: str, save_dir: str, resource_summary: dict = None
+    ) -> str:
+        """生成 HTML 可视化报告 (含内存/CPU 趋势折线图)"""
+        ts_str = meta.get("start_time", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        pkg_str = ", ".join(meta.get("packages", [])) or "全系统"
+
+        crash_rows = (
+            "".join(
+                f"<tr><td>{pkg}</td>"
+                f"<td style='color:#e74c3c;font-weight:bold'>{cnt}</td></tr>"
+                for pkg, cnt in self.top_crashes(10)
+            )
+            or "<tr><td colspan='2' style='color:#27ae60'>无崩溃记录 🎉</td></tr>"
+        )
+        anr_rows = (
+            "".join(
+                f"<tr><td>{pkg}</td>"
+                f"<td style='color:#e67e22;font-weight:bold'>{cnt}</td></tr>"
+                for pkg, cnt in self.top_anrs(10)
+            )
+            or "<tr><td colspan='2' style='color:#27ae60'>无 ANR 记录 🎉</td></tr>"
+        )
+
+        score = max(
+            0, 100 - min(self.crash_count * 5, 50) - min(self.anr_count * 3, 30)
+        )
+        score_color = (
+            "#27ae60" if score >= 80 else "#e67e22" if score >= 50 else "#e74c3c"
+        )
+
+        # ── 资源摘要卡片 ─────────────────────────────────
+        rs = resource_summary or {}
+        mem_start = rs.get("mem_start_mb", 0)
+        mem_end = rs.get("mem_end_mb", 0)
+        mem_drop = rs.get("mem_drop_mb", 0)
+        leak_pct = rs.get("leak_pct", 0)
+        cpu_avg = rs.get("cpu_avg", 0)
+        cpu_max = rs.get("cpu_max", 0)
+
+        leak_color = (
+            "#e74c3c" if leak_pct >= 40 else "#e67e22" if leak_pct >= 20 else "#27ae60"
+        )
+        leak_label = (
+            "疑似泄漏 ⚠"
+            if leak_pct >= 40
+            else "轻微下降" if leak_pct >= 20 else "正常 ✓"
+        )
+
+        resource_cards = (
+            f"""
+  <div class="card">
+    <div class="num" style="color:{leak_color}">{leak_pct:.0f}%</div>
+    <div class="lbl">内存下降率（{leak_label}）</div>
+  </div>
+  <div class="card">
+    <div class="num" style="color:#555">{mem_drop:.0f}MB</div>
+    <div class="lbl">内存下降量（{mem_start:.0f}→{mem_end:.0f}MB）</div>
+  </div>
+  <div class="card">
+    <div class="num" style="color:#722ed1">{cpu_avg:.0f}%</div>
+    <div class="lbl">CPU 均值（峰值 {cpu_max:.0f}%）</div>
+  </div>"""
+            if rs
+            else ""
+        )
+
+        # ── 趋势图数据 (Chart.js) ─────────────────────────
+        samples = rs.get("all_samples", [])
+        if samples:
+            ts_labels = "[" + ",".join(f"'{s['ts']}'" for s in samples) + "]"
+            mem_values = "[" + ",".join(str(s["mem"]) for s in samples) + "]"
+            cpu_values = "[" + ",".join(str(s["cpu"]) for s in samples) + "]"
+            warn_line = (
+                "[" + ",".join(str(ResourceMonitor.MEM_WARN_MB) for _ in samples) + "]"
+            )
+            critical_line = (
+                "["
+                + ",".join(str(ResourceMonitor.MEM_CRITICAL_MB) for _ in samples)
+                + "]"
+            )
+
+            trend_section = f"""
+<div class="card" style="margin-top:24px">
+  <div class="section-title">📈 内存 / CPU 实时趋势</div>
+  <canvas id="memChart" height="80"></canvas>
+  <canvas id="cpuChart" height="60" style="margin-top:16px"></canvas>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+(function(){{
+  const labels = {ts_labels};
+  new Chart(document.getElementById('memChart'),{{
+    type:'line',
+    data:{{
+      labels,
+      datasets:[
+        {{label:'RAM可用(MB)', data:{mem_values},
+          borderColor:'#1890ff', backgroundColor:'rgba(24,144,255,0.08)',
+          fill:true, tension:0.3, pointRadius:1}},
+        {{label:'预警线({ResourceMonitor.MEM_WARN_MB}MB)', data:{warn_line},
+          borderColor:'#e67e22', borderDash:[5,3], pointRadius:0, fill:false}},
+        {{label:'临界线({ResourceMonitor.MEM_CRITICAL_MB}MB)', data:{critical_line},
+          borderColor:'#e74c3c', borderDash:[5,3], pointRadius:0, fill:false}},
+      ]
+    }},
+    options:{{
+      plugins:{{legend:{{position:'bottom'}}}},
+      scales:{{y:{{title:{{display:true,text:'MB'}}}}}}
+    }}
+  }});
+  new Chart(document.getElementById('cpuChart'),{{
+    type:'line',
+    data:{{
+      labels,
+      datasets:[
+        {{label:'CPU占用(%)', data:{cpu_values},
+          borderColor:'#722ed1', backgroundColor:'rgba(114,46,209,0.08)',
+          fill:true, tension:0.3, pointRadius:1}},
+      ]
+    }},
+    options:{{
+      plugins:{{legend:{{position:'bottom'}}}},
+      scales:{{y:{{min:0,max:100,title:{{display:true,text:'%'}}}}}}
+    }}
+  }});
+}})();
+</script>"""
+        else:
+            trend_section = ""
+
+        html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Monkey 压测报告 — {ts_str}</title>
+<style>
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:-apple-system,'Segoe UI',sans-serif;
+        background:#f0f2f5;color:#333;padding:24px}}
+  h1{{font-size:22px;margin-bottom:4px}}
+  .sub{{color:#888;font-size:13px;margin-bottom:24px}}
+  .grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+          gap:16px;margin-bottom:24px}}
+  .card{{background:#fff;border-radius:12px;padding:20px;
+          box-shadow:0 2px 8px rgba(0,0,0,.06)}}
+  .card .num{{font-size:36px;font-weight:700}}
+  .card .lbl{{font-size:12px;color:#999;margin-top:4px}}
+  .score-ring{{text-align:center}}
+  .score-ring .num{{font-size:52px}}
+  table{{width:100%;border-collapse:collapse}}
+  th,td{{padding:10px 14px;text-align:left;
+          border-bottom:1px solid #f0f0f0;font-size:13px}}
+  th{{background:#fafafa;font-weight:600;color:#555}}
+  .section-title{{font-size:15px;font-weight:600;margin:0 0 12px}}
+  .meta-grid{{display:grid;grid-template-columns:1fr 1fr;
+               gap:8px;font-size:13px}}
+  .meta-grid span{{color:#999}}
+  footer{{margin-top:32px;font-size:12px;color:#bbb;text-align:center}}
+</style>
+</head>
+<body>
+<h1>🐒 Monkey 压力测试报告</h1>
+<div class="sub">IVI TOOLBOX PRO | {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</div>
+
+<div class="grid">
+  <div class="card score-ring">
+    <div class="num" style="color:{score_color}">{score}</div>
+    <div class="lbl">稳定性评分 / 100</div>
+  </div>
+  <div class="card">
+    <div class="num" style="color:#e74c3c">{self.crash_count}</div>
+    <div class="lbl">崩溃次数 Crash</div>
+  </div>
+  <div class="card">
+    <div class="num" style="color:#e67e22">{self.anr_count}</div>
+    <div class="lbl">ANR 次数</div>
+  </div>
+  <div class="card">
+    <div class="num" style="color:#1890ff">{self.events_injected:,}</div>
+    <div class="lbl">注入事件数</div>
+  </div>
+  {resource_cards}
+</div>
+
+<div class="card" style="margin-bottom:24px">
+  <div class="section-title">📋 测试配置</div>
+  <div class="meta-grid">
+    <div><span>设备: </span>{meta.get('device_id', 'N/A')}</div>
+    <div><span>开始时间: </span>{ts_str}</div>
+    <div><span>测试包名: </span>{pkg_str[:80]}</div>
+    <div><span>事件总数: </span>{meta.get('count', 0):,}</div>
+    <div><span>事件间隔: </span>{meta.get('throttle', 0)} ms</div>
+    <div><span>Seed: </span>{self.seed_used or meta.get('seed') or '随机'}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div class="card">
+    <div class="section-title">🔴 崩溃 Top 10</div>
+    <table><tr><th>包名</th><th>次数</th></tr>{crash_rows}</table>
+  </div>
+  <div class="card">
+    <div class="section-title">🟠 ANR Top 10</div>
+    <table><tr><th>包名</th><th>次数</th></tr>{anr_rows}</table>
+  </div>
+</div>
+
+{trend_section}
+
+<footer>Generated by IVI TOOLBOX PRO — MonkeyTester v2.0</footer>
+</body>
+</html>"""
+
+        report_path = os.path.join(save_dir, f"report_{meta.get('ts_tag', '')}.html")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(html)
+        return report_path
+
+
+# ╔══════════════════════════════════════════════════════════╗
+# ║  PATCH-1: ResourceMonitor (完整替换)                     ║
+# ╚══════════════════════════════════════════════════════════╝
+class ResourceMonitor:
+    """
+    后台资源监控器 — 增强版
+    新增功能:
+      · 内存基线记录 (压测开始时快照)
+      · 低内存黄色预警  < MEM_WARN_MB
+      · 低内存红色临界  < MEM_CRITICAL_MB → 自动停止
+      · 内存泄漏检测    基线下降 > 40%
+      · CPU 多核归一化  (不再出现 600% 的情况)
+      · 全部用独立 subprocess，线程安全
+    """
+
+    MEM_WARN_MB = 300  # 黄色预警阈值 (MB)
+    MEM_CRITICAL_MB = 150  # 红色临界阈值 (MB)，触发自动停止
+
+    def __init__(self, device_id: str, on_mem_alert=None):
+        """
+        device_id   : adb 设备序列号
+        on_mem_alert: 预警回调 callable(level: str, mem_mb: float)
+                      level 取值: "warn" / "critical" / "leak"
+        """
+        self.device_id = device_id
+        self.on_mem_alert = on_mem_alert
+
+        self._running = False
+        self._thread = None
+        self.samples: List[Dict] = []
+
+        self.baseline_mem: Optional[float] = None  # 基线值
+
+        # 防止重复触发
+        self._warn_fired = False
+        self._critical_fired = False
+        self._leak_fired = False
+
+    # ── 生命周期 ────────────────────────────────────────────
+
+    def start(self):
+        self._running = True
+        self._thread = threading.Thread(target=self._worker, daemon=True)
+        self._thread.start()
+
+    def stop(self):
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=6)
+
+    # ── 后台采集线程 ─────────────────────────────────────────
+
+    def _worker(self):
+        while self._running:
+            ts = datetime.now().strftime("%H:%M:%S")
+            cpu = self._get_cpu()
+            mem = self._get_mem()
+            self.samples.append({"ts": ts, "cpu": cpu, "mem": mem})
+
+            # 记录基线 (第一个有效采样)
+            if self.baseline_mem is None and mem > 0:
+                self.baseline_mem = mem
+
+            # ── 预警检测 ────────────────────────────────────
+            if mem > 0:
+                # 1. 内存临界 → 自动停止
+                if mem < self.MEM_CRITICAL_MB and not self._critical_fired:
+                    self._critical_fired = True
+                    if self.on_mem_alert:
+                        self.on_mem_alert("critical", mem)
+
+                # 2. 内存预警
+                elif mem < self.MEM_WARN_MB and not self._warn_fired:
+                    self._warn_fired = True
+                    if self.on_mem_alert:
+                        self.on_mem_alert("warn", mem)
+
+                # 3. 泄漏检测: 基线下降 > 40%，且至少采了 3 个点
+                if (
+                    self.baseline_mem
+                    and len(self.samples) >= 3
+                    and mem < self.baseline_mem * 0.6
+                    and not self._leak_fired
+                ):
+                    self._leak_fired = True
+                    if self.on_mem_alert:
+                        self.on_mem_alert("leak", mem)
+
+            # 5s 间隔，每 0.1s 检查退出标志
+            for _ in range(50):
+                if not self._running:
+                    return
+                time.sleep(0.1)
+
+    # ── adb 数据采集 (独立 subprocess，线程安全) ────────────
+
+    def _get_cpu(self) -> float:
+        """获取整机 CPU 占用率 0-100%，正确处理多核"""
+        try:
+            # 方案A: dumpsys cpuinfo TOTAL 已归一化，最准
+            r = subprocess.run(
+                f'adb -s {self.device_id} shell dumpsys cpuinfo | grep "TOTAL"',
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=8,
+            )
+            m = re.search(r"(\d+)%\s+TOTAL", r.stdout)
+            if m:
+                return float(m.group(1))
+
+            # 方案B: /proc/stat 两次采样差值，不受核心数影响
+            def _read_stat():
+                r2 = subprocess.run(
+                    f"adb -s {self.device_id} shell cat /proc/stat",
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                line = r2.stdout.splitlines()[0] if r2.stdout else ""
+                parts = line.split()
+                if len(parts) >= 5:
+                    vals = [int(x) for x in parts[1:8]]
+                    idle = vals[3]
+                    total = sum(vals)
+                    return total, idle
+                return 0, 0
+
+            t1, i1 = _read_stat()
+            time.sleep(0.5)
+            t2, i2 = _read_stat()
+            if (t2 - t1) > 0:
+                return round((1 - (i2 - i1) / (t2 - t1)) * 100, 1)
+            return 0.0
+        except Exception:
+            return 0.0
+
+    def _get_mem(self) -> float:
+        """获取 MemAvailable (MB)，线程安全"""
+        try:
+            r = subprocess.run(
+                f"adb -s {self.device_id} shell cat /proc/meminfo",
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            m = re.search(r"MemAvailable:\s*(\d+)", r.stdout)
+            return round(int(m.group(1)) / 1024, 1) if m else 0.0
+        except Exception:
+            return 0.0
+
+    # ── 查询接口 ─────────────────────────────────────────────
+
+    def latest(self) -> Dict:
+        """返回最新一个采样，附带泄漏百分比"""
+        base = (
+            self.samples[-1].copy()
+            if self.samples
+            else {"ts": "--", "cpu": 0.0, "mem": 0.0}
+        )
+        base["leak_pct"] = self._leak_pct()
+        return base
+
+    def _leak_pct(self) -> float:
+        """相对基线的内存下降百分比"""
+        if self.baseline_mem and self.samples and self.baseline_mem > 0:
+            cur = self.samples[-1]["mem"]
+            return round((self.baseline_mem - cur) / self.baseline_mem * 100, 1)
+        return 0.0
+
+    def summary(self) -> Dict:
+        if not self.samples:
+            return {}
+        cpus = [s["cpu"] for s in self.samples]
+        mems = [s["mem"] for s in self.samples]
+        return {
+            "cpu_avg": round(sum(cpus) / len(cpus), 1),
+            "cpu_max": max(cpus),
+            "mem_start_mb": self.baseline_mem or 0,
+            "mem_end_mb": mems[-1] if mems else 0,
+            "mem_min_mb": min(mems),
+            "mem_avg_mb": round(sum(mems) / len(mems), 1),
+            "mem_drop_mb": round(
+                (self.baseline_mem or 0) - (mems[-1] if mems else 0), 1
+            ),
+            "leak_pct": self._leak_pct(),
+            "sample_count": len(self.samples),
+            "all_samples": self.samples,  # 供 HTML 报告画趋势图
+        }
+
+
+# ============================================================
+# IVI 专属场景模板库
+# ============================================================
+IVI_SCENE_TEMPLATES = {
+    "1": {
+        "name": "🎵 媒体娱乐压测",
+        "desc": "音乐/视频/蓝牙音乐相关应用",
+        "keywords": ["music", "media", "audio", "player", "bluetooth"],
+        "throttle": 200,
+        "count": 20000,
+        "pct": {
+            "touch": 50,
+            "motion": 30,
+            "appswitch": 10,
+            "syskeys": 5,
+            "anyevent": 5,
+        },
+    },
+    "2": {
+        "name": "🗺️ 导航地图压测",
+        "desc": "高德/百度/原车导航及定位服务",
+        "keywords": ["navi", "map", "location", "amap", "baidu"],
+        "throttle": 400,
+        "count": 15000,
+        "pct": {
+            "touch": 60,
+            "motion": 20,
+            "appswitch": 10,
+            "syskeys": 5,
+            "anyevent": 5,
+        },
+    },
+    "3": {
+        "name": "📞 蓝牙通话压测",
+        "desc": "蓝牙电话、联系人、消息应用",
+        "keywords": ["phone", "bluetooth", "dialer", "contacts", "message"],
+        "throttle": 300,
+        "count": 10000,
+        "pct": {
+            "touch": 45,
+            "motion": 20,
+            "appswitch": 20,
+            "syskeys": 10,
+            "anyevent": 5,
+        },
+    },
+    "4": {
+        "name": "⚙️ 系统设置压测",
+        "desc": "Settings、系统服务、配置项稳定性",
+        "keywords": ["settings", "setting", "system"],
+        "throttle": 500,
+        "count": 8000,
+        "pct": {
+            "touch": 40,
+            "motion": 15,
+            "appswitch": 25,
+            "syskeys": 15,
+            "anyevent": 5,
+        },
+    },
+    "5": {
+        "name": "🚗 全系统拉力赛",
+        "desc": "所有预装应用全量压测 (耗时较长)",
+        "keywords": [],  # 空 = 全部系统包
+        "throttle": 300,
+        "count": 50000,
+        "pct": {
+            "touch": 40,
+            "motion": 25,
+            "appswitch": 15,
+            "syskeys": 5,
+            "anyevent": 15,
+        },
+    },
+}
+
+DEFAULT_PCT = {"touch": 40, "motion": 25, "appswitch": 15, "syskeys": 5, "anyevent": 5}
+
+
+# ============================================================
+# 主类: MonkeyTester v2.0
+# ============================================================
 class MonkeyTester:
-    def __init__(self, driver: AdbDriver, console: Console):
+    """
+    IVI 工业级 Monkey 压力测试专家 v2.0
+    完整修复 + 全功能增强版
+    """
+
+    HISTORY_FILE = "monkey_history.json"
+
+    def __init__(
+        self, driver, console: Console, config_loader=None, screenshot_mgr=None
+    ):
         self.driver = driver
         self.console = console
-        self.config = {"count": 10000, "throttle": 300, "seed": None, "packages": []}
-        self.is_running = False
-        # 初始化日志保存目录
-        self.save_dir = os.path.join(os.getcwd(), "monkey_logs")
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+        self.cfg_loader = config_loader  # ConfigLoader 实例 (可选)
+        self.screenshot_mgr = (
+            screenshot_mgr  # ScreenshotManager 实例 (可选，用于异常截图)
+        )
 
-    def _get_packages(self, flag="-3"):
-        s, out = self.driver.run(f"shell pm list packages {flag}")
+        # ---- [BUG-3 FIX] 从 ConfigLoader 读取持久化配置 ----
+        persisted = {}
+        if self.cfg_loader:
+            persisted = self.cfg_loader.get("monkey_config", {})
+
+        self.config: Dict = {
+            "count": persisted.get("count", 10000),
+            "throttle": persisted.get("throttle", 300),
+            "seed": persisted.get("seed", None),
+            "packages": persisted.get("packages", []),
+            "pct": persisted.get("pct", dict(DEFAULT_PCT)),
+        }
+
+        self.is_running = False
+        self.save_dir = os.path.join(os.getcwd(), "monkey_logs")
+        os.makedirs(self.save_dir, exist_ok=True)
+
+        # 历史记录 (本地 JSON)
+        self._history: List[Dict] = self._load_history()
+
+        # Android 版本缓存
+        self._android_ver: Optional[int] = None
+
+    # ----------------------------------------------------------
+    # 内部工具方法
+    # ----------------------------------------------------------
+
+    def _save_config(self):
+        """[BUG-3 FIX] 持久化写回 ConfigLoader"""
+        if self.cfg_loader:
+            self.cfg_loader.set(
+                "monkey_config",
+                {
+                    "count": self.config["count"],
+                    "throttle": self.config["throttle"],
+                    "seed": self.config["seed"],
+                    "packages": self.config["packages"],
+                    "pct": self.config["pct"],
+                },
+            )
+
+    def _get_android_ver(self) -> int:
+        if self._android_ver is None:
+            _, out = self.driver.run("shell getprop ro.build.version.release")
+            try:
+                self._android_ver = int(out.strip().split(".")[0])
+            except Exception:
+                self._android_ver = 7  # 保守默认
+        return self._android_ver
+
+    def _get_packages(self, flag: str = "") -> List[str]:
+        _, out = self.driver.run(f"shell pm list packages {flag}")
         return [l.split(":")[-1].strip() for l in out.splitlines() if "package:" in l]
 
-    def _kill_monkey(self):
+    def _kill_monkey(self) -> bool:
+        """[BUG-2 FIX] 多策略终止 + 确认等待"""
         self.driver.run("shell killall com.android.commands.monkey")
         self.driver.run("shell pkill -f monkey")
+        time.sleep(0.5)
+        # 二次确认
+        _, pids = self.driver.run("shell pgrep -f monkey")
+        if pids.strip():
+            self.driver.run(f"shell kill -9 {pids.strip()}")
+            time.sleep(0.5)
+        # 最终验证
+        _, pids2 = self.driver.run("shell pgrep -f monkey")
+        return not bool(pids2.strip())
+
+    def _load_history(self) -> List[Dict]:
+        path = os.path.join(self.save_dir, self.HISTORY_FILE)
+        try:
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception:
+            pass
+        return []
+
+    def _save_history(self, record: Dict):
+        self._history.append(record)
+        # 只保留最近 50 条
+        self._history = self._history[-50:]
+        path = os.path.join(self.save_dir, self.HISTORY_FILE)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(self._history, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            self.console.print(f"[yellow]⚠ 历史记录保存失败: {e}[/yellow]")
+
+    def _auto_screenshot(self, reason: str, pkg: str):
+        """异常时自动截图 (联动 ScreenshotManager)"""
+
+        try:
+            ts = datetime.now().strftime("%H%M%S")
+            filename = f"monkey_exception_{reason}_{pkg.replace('.', '_')}_{ts}.png"
+            remote = f"/sdcard/{filename}"
+            local = os.path.join(self.save_dir, filename)
+            self.driver.run(f"shell screencap -p {remote}")
+            self.driver.run(f'pull {remote} "{local}"')
+            self.driver.run(f"shell rm {remote}")
+        except Exception:
+            pass
+
+    def _build_cmd(self, count_override: Optional[int] = None) -> str:
+        """构建 Monkey 命令字符串"""
+        cmd = "monkey"
+        for p in self.config["packages"]:
+            cmd += f" -p {p}"
+
+        cmd += f" --throttle {self.config['throttle']}"
+
+        if self.config["seed"]:
+            cmd += f" -s {self.config['seed']}"
+
+        pct = self.config["pct"]
+        cmd += (
+            f" --pct-touch {pct['touch']}"
+            f" --pct-motion {pct['motion']}"
+            f" --pct-appswitch {pct['appswitch']}"
+            f" --pct-syskeys {pct['syskeys']}"
+            f" --pct-anyevent {pct['anyevent']}"
+            f" --pct-trackball 0 --pct-nav 0 --pct-majornav 0"
+        )
+
+        cmd += " --ignore-crashes --ignore-timeouts --ignore-security-exceptions"
+
+        # [OPT-6] Android 版本检查 --monitor-native-crashes 需要 API 23+
+        if self._get_android_ver() >= 6:
+            cmd += " --monitor-native-crashes"
+
+        total = count_override if count_override is not None else self.config["count"]
+        cmd += f" -v -v {total}"
+        return cmd
+
+    # ----------------------------------------------------------
+    # 主菜单
+    # ----------------------------------------------------------
 
     def config_menu(self):
         while True:
             self.console.clear()
-            # 状态栏显示优化
             pkg_count = len(self.config["packages"])
             pkg_info = (
                 f"[green]{pkg_count} 个应用[/green]"
                 if pkg_count > 0
                 else "[red bold]全系统 (无限制)[/red bold]"
             )
-            seed_info = self.config["seed"] if self.config["seed"] else "随机 (Random)"
+            pct = self.config["pct"]
+            pct_str = (
+                f"Touch:{pct['touch']}% Motion:{pct['motion']}% "
+                f"AppSwitch:{pct['appswitch']}% SysKey:{pct['syskeys']}%"
+            )
+            seed_info = self.config["seed"] or "随机 (Random)"
 
             grid = Table.grid(expand=True)
             grid.add_column(style="cyan", justify="right")
             grid.add_column(style="white")
             grid.add_row("目标范围:", pkg_info)
-            grid.add_row("事件总数:", f"[bold]{self.config['count']}[/bold]")
+            grid.add_row("事件总数:", f"[bold]{self.config['count']:,}[/bold]")
             grid.add_row("事件间隔:", f"{self.config['throttle']} ms")
-            grid.add_row("Seed种子:", str(seed_info))
+            grid.add_row("Seed 种子:", str(seed_info))
+            grid.add_row("事件配比:", f"[dim]{pct_str}[/dim]")
 
             self.console.print(
                 Panel(
                     grid,
-                    title="[bold magenta]🐒 Monkey 压测配置台[/bold magenta]",
+                    title="[bold magenta]🐒 Monkey 压测配置台 v2.0[/bold magenta]",
                     border_style="magenta",
                 )
             )
 
             menu = Table.grid(padding=(0, 2))
             menu.add_row(
-                "[yellow]1[/yellow]", "🎯 [bold]选择/添加目标应用[/bold] (Search)"
+                "[yellow]1[/yellow]",
+                "🎯 [bold]选择/追加目标应用[/bold] (Search+Append)",
             )
             menu.add_row(
                 "[yellow]2[/yellow]", "🔢 [bold]设置参数[/bold] (Count/Throttle)"
             )
             menu.add_row("[yellow]3[/yellow]", "🌱 [bold]设置种子[/bold] (Seed)")
             menu.add_row(
-                "[yellow]4[/yellow]", "🧹 [bold]加载所有系统应用[/bold] (Clear All)"
+                "[yellow]4[/yellow]", "📦 [bold]加载系统应用[/bold] (System Pkgs)"
             )
             menu.add_row(
-                "[yellow]5[/yellow]",
-                "👀 [bold cyan]查看已选应用列表[/bold cyan] (Review)",
-            )  # <--- 新增
+                "[yellow]5[/yellow]", "👀 [bold cyan]查看已选应用列表[/bold cyan]"
+            )
+            menu.add_row(
+                "[yellow]6[/yellow]",
+                "⚡ [bold cyan]事件配比设置[/bold cyan] (Pct Config)",
+            )
+            menu.add_row(
+                "[yellow]7[/yellow]",
+                "🚗 [bold magenta]IVI 场景预置模板[/bold magenta] (Templates)",
+            )
+            menu.add_row("[yellow]8[/yellow]", "📊 [bold]历史测试记录[/bold] (History)")
+            menu.add_row(
+                "[yellow]9[/yellow]",
+                "🔄 [bold red]多轮对比压测[/bold red] (Baseline vs Stress)",
+            )
+            menu.add_row(
+                "[yellow]10[/yellow]",
+                "🔁 [bold red]Crash 复现引擎[/bold red] (Replay Seed)",
+            )
             menu.add_row(
                 "[yellow]s[/yellow]", "🚀 [bold green]开始压测[/bold green] (Start)"
             )
             menu.add_row("[yellow]b[/yellow]", "返回")
             self.console.print(Panel(menu, border_style="yellow"))
 
-            c = Prompt.ask("选项").lower()
+            c = Prompt.ask("选项").lower().strip()
+
             if c == "1":
-                self._select_packages()
+                self._select_packages_append()
             elif c == "2":
-                try:
-                    cnt = Prompt.ask("事件总数", default=str(self.config["count"]))
-                    self.config["count"] = int(cnt)
-                    thr = Prompt.ask("间隔(ms)", default=str(self.config["throttle"]))
-                    self.config["throttle"] = int(thr)
-                except:
-                    pass
+                self._set_params()
             elif c == "3":
-                val = Prompt.ask("Seed值 (回车随机)", default="")
+                val = Prompt.ask("Seed 值 (回车随机)", default="")
                 self.config["seed"] = val if val else None
+                self._save_config()
             elif c == "4":
-                with self.console.status(
-                    "[bold cyan]正在拉取所有系统应用列表...[/bold cyan]"
-                ):
-                    # 使用 -s 参数获取系统包
-                    sys_pkgs = self._get_packages("-s")
-
-                if sys_pkgs:
-                    self.config["packages"] = sys_pkgs
-                    self.console.print(
-                        Panel(
-                            f"[bold green]✔ 已加载全量系统应用[/bold green]\n"
-                            f"范围: 仅包含 ROM 预装应用 (System Partition)\n"
-                            f"数量: [cyan]{len(sys_pkgs)}[/cyan] 个",
-                            border_style="green",
-                        )
-                    )
-                else:
-                    self.console.print("[red]❌ 未获取到系统应用列表[/red]")
-
-                time.sleep(1.5)
-            elif c == "5":  # <--- 新增响应
+                self._load_system_packages()
+            elif c == "5":
                 self._view_selected_packages()
+            elif c == "6":
+                self._config_event_pct()
+            elif c == "7":
+                self._apply_scene_template()
+            elif c == "8":
+                self._show_history()
+            elif c == "9":
+                self._run_compare_test()
+            elif c == "10":
+                self._replay_crash_seed()
             elif c == "s":
                 self.run_test()
             elif c == "b":
                 return
 
-    def _view_selected_packages(self):
-        """查看当前待测应用清单"""
-        self.console.clear()
-        pkgs = self.config["packages"]
+    # ----------------------------------------------------------
+    # 子菜单: 参数设置
+    # ----------------------------------------------------------
 
-        if not pkgs:
-            self.console.print(
-                Panel(
-                    "[bold red]☢️ 当前模式：全系统压测[/bold red]\n\n"
-                    "[dim]未指定任何包名，Monkey 将在整个系统中随机乱点。\n"
-                    "这可能会测试到 Launcher, Settings, SystemUI 等系统组件。[/dim]",
-                    title="已选列表",
-                    border_style="red",
-                )
-            )
-        else:
-            t = Table(
-                title=f"📋 已选目标应用清单 ({len(pkgs)} 个)",
-                box=box.ROUNDED,
-                expand=True,
-                border_style="cyan",
-            )
-            t.add_column("ID", justify="center", width=4, style="dim")
-            t.add_column("Package Name", style="bold white")
+    def _set_params(self):
+        try:
+            cnt = Prompt.ask("事件总数", default=str(self.config["count"]))
+            self.config["count"] = int(cnt)
+            thr = Prompt.ask("间隔 (ms)", default=str(self.config["throttle"]))
+            self.config["throttle"] = int(thr)
+            self._save_config()
+            self.console.print("[green]✔ 参数已保存[/green]")
+        except ValueError:
+            self.console.print("[red]输入无效，已取消[/red]")
+        time.sleep(0.8)
 
-            for i, p in enumerate(pkgs):
-                t.add_row(str(i + 1), p)
+    # ----------------------------------------------------------
+    # 子菜单: 应用选择 (支持多轮累加) [OPT-5 FIX]
+    # ----------------------------------------------------------
 
-            self.console.print(t)
-
-        Prompt.ask("\n按回车返回配置菜单...")
-
-    def _select_packages(self):
-        """应用选择逻辑 (UI 美化版)"""
+    def _select_packages_append(self):
         with self.console.status("[bold cyan]正在拉取设备全量应用列表...[/bold cyan]"):
             all_pkgs = self._get_packages("")
 
-        # 使用 Panel 包裹统计信息
         self.console.print(
-            Align.center(f"[dim]设备共安装 {len(all_pkgs)} 个应用[/dim]")
+            Align.center(
+                f"[dim]设备共安装 {len(all_pkgs)} 个应用 | 当前已选 {len(self.config['packages'])} 个[/dim]"
+            )
         )
+
+        # 操作模式选择
+        mode_menu = Table.grid(padding=(0, 2))
+        mode_menu.add_row("[cyan]a[/cyan]", "追加到现有选择 (Append)")
+        mode_menu.add_row("[cyan]r[/cyan]", "替换现有选择 (Replace)")
+        mode_menu.add_row("[cyan]0[/cyan]", "返回")
+        self.console.print(Panel(mode_menu, title="选择操作模式", border_style="dim"))
+        mode = Prompt.ask("模式", default="a").lower()
+        if mode == "0":
+            return
+        append_mode = mode == "a"
 
         while True:
             self.console.print("\n[bold cyan]── 🔍 应用搜索 ──[/bold cyan]")
-            keyword = Prompt.ask(
-                "请输入关键词 (如: set, navi) [dim]输入 0 返回[/dim]"
-            ).strip()
-
+            keyword = Prompt.ask("关键词 [dim](输入 0 完成)[/dim]").strip()
             if keyword == "0":
-                return
+                break
             if not keyword:
                 continue
 
@@ -4719,55 +5659,42 @@ class MonkeyTester:
                 continue
 
             self.console.clear()
-
-            # --- [UI 升级] 专业表格渲染 ---
             t = Table(
-                title=f"搜索结果: [bold green]'{keyword}'[/bold green] (命中 {len(filtered)} 个)",
-                box=box.ROUNDED,  # 圆角边框
-                header_style="bold yellow",  # 表头高亮
-                border_style="blue",  # 边框颜色
-                expand=True,  # 撑满宽度
-                highlight=True,  # 自动高亮数字
+                title=f"搜索结果: '{keyword}' ({len(filtered)} 个)",
+                box=box.ROUNDED,
+                header_style="bold yellow",
+                border_style="blue",
+                expand=True,
             )
-            t.add_column(
-                "ID", justify="center", style="bold cyan", width=6, no_wrap=True
-            )
+            t.add_column("ID", justify="center", style="bold cyan", width=6)
             t.add_column("Package Name", style="white")
-
+            t.add_column("状态", justify="center", width=8)
             for i, p in enumerate(filtered[:50]):
-                t.add_row(str(i + 1), p)
-
+                already = "✔" if p in self.config["packages"] else ""
+                t.add_row(str(i + 1), p, f"[green]{already}[/green]")
             self.console.print(t)
-            # ---------------------------
 
             if len(filtered) > 50:
                 self.console.print(
-                    Align.center(
-                        f"[dim]... 还有 {len(filtered)-50} 个结果未显示，建议优化关键词 ...[/dim]"
-                    )
+                    Align.center(f"[dim]... 还有 {len(filtered)-50} 个未显示[/dim]")
                 )
 
-            # --- [UI 升级] 操作面板 ---
             tips = (
                 "[bold white]操作指南[/bold white]\n"
-                "• 输入 [cyan]ID[/cyan] 单选 (如: 1)\n"
-                "• 输入 [cyan]1,2[/cyan] 多选\n"
-                "• 输入 [cyan]all[/cyan] 全选\n"
-                "• 输入 [cyan]r[/cyan] 重新搜索"
+                "• 输入 [cyan]ID[/cyan] 单选 | [cyan]1,2,3[/cyan] 多选 | [cyan]all[/cyan] 全选\n"
+                "• 输入 [cyan]r[/cyan] 重新搜索 | [cyan]0[/cyan] 结束选择"
             )
             self.console.print(Panel(tips, border_style="dim", expand=False))
 
-            sel = Prompt.ask(
-                "[bold yellow]请做出选择[/bold yellow]", default=""
-            ).lower()
-
+            sel = Prompt.ask("[bold yellow]选择[/bold yellow]", default="").lower()
             if sel == "r":
                 continue
-            elif sel == "all":
-                self.config["packages"] = filtered
-                self.console.print(f"[green]✔ 已选中 {len(filtered)} 个应用[/green]")
-                time.sleep(1)
-                return
+            if sel == "0":
+                break
+
+            new_pkgs: List[str] = []
+            if sel == "all":
+                new_pkgs = filtered[:]
             else:
                 try:
                     idxs = [
@@ -4775,46 +5702,493 @@ class MonkeyTester:
                         for x in sel.split(",")
                         if x.strip().isdigit()
                     ]
-                    selected = [filtered[i] for i in idxs if 0 <= i < len(filtered)]
-                    if selected:
-                        self.config["packages"] = selected
-                        self.console.print(
-                            f"[green]✔ 已选中 {len(selected)} 个应用[/green]"
-                        )
-                        time.sleep(1)
-                        return
-                except:
+                    new_pkgs = [filtered[i] for i in idxs if 0 <= i < len(filtered)]
+                except Exception:
                     pass
 
-    def run_test(self):
-        """执行压测引擎 (带日志保存 & 工业级参数)"""
-        import platform  # 强制导入防报错
+            if new_pkgs:
+                if append_mode:
+                    before = len(self.config["packages"])
+                    # 去重合并
+                    merged = list(dict.fromkeys(self.config["packages"] + new_pkgs))
+                    self.config["packages"] = merged
+                    added = len(self.config["packages"]) - before
+                    self.console.print(
+                        f"[green]✔ 追加 {added} 个 (当前共 {len(self.config['packages'])} 个)[/green]"
+                    )
+                else:
+                    self.config["packages"] = new_pkgs
+                    self.console.print(f"[green]✔ 已选中 {len(new_pkgs)} 个[/green]")
+                    self._save_config()
+                    time.sleep(0.8)
+                    break
 
+        self._save_config()
+
+    # ----------------------------------------------------------
+    # 子菜单: 查看已选
+    # ----------------------------------------------------------
+
+    def _view_selected_packages(self):
         self.console.clear()
+        pkgs = self.config["packages"]
+        if not pkgs:
+            self.console.print(
+                Panel(
+                    "[bold red]☢️ 当前模式：全系统压测[/bold red]\n\n[dim]未指定包名，Monkey 将在整个系统随机点击。[/dim]",
+                    title="已选列表",
+                    border_style="red",
+                )
+            )
+        else:
+            t = Table(
+                title=f"📋 已选目标应用清单 ({len(pkgs)} 个)",
+                box=box.ROUNDED,
+                expand=True,
+                border_style="cyan",
+            )
+            t.add_column("ID", justify="center", width=4, style="dim")
+            t.add_column("Package Name", style="bold white")
+            for i, p in enumerate(pkgs):
+                t.add_row(str(i + 1), p)
+            self.console.print(t)
 
-        # 1. 准备日志文件
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_filename = f"monkey_{self.driver.device_id}_{ts}.log"
-        log_path = os.path.join(self.save_dir, log_filename)
+        del_opt = Prompt.ask(
+            "\n[dim]输入 ID 删除一项，直接回车返回[/dim]", default=""
+        ).strip()
+        if del_opt.isdigit():
+            idx = int(del_opt) - 1
+            if pkgs and 0 <= idx < len(pkgs):
+                removed = pkgs.pop(idx)
+                self.config["packages"] = pkgs
+                self._save_config()
+                self.console.print(f"[green]✔ 已移除 {removed}[/green]")
+                time.sleep(0.8)
 
-        # 2. 构建命令
-        cmd = "monkey"
-        for p in self.config["packages"]:
-            cmd += f" -p {p}"
-        cmd += f" --throttle {self.config['throttle']}"
-        if self.config["seed"]:
-            cmd += f" -s {self.config['seed']}"
+    # ----------------------------------------------------------
+    # 子菜单: 加载系统应用
+    # ----------------------------------------------------------
 
-        # [核心优化] 工业级事件配比
-        cmd += " --pct-touch 40 --pct-motion 25 --pct-appswitch 15 --pct-syskeys 5 --pct-anyevent 5"
-        cmd += " --pct-trackball 0 --pct-nav 0 --pct-majornav 0"
-        cmd += " --ignore-crashes --ignore-timeouts --ignore-security-exceptions --monitor-native-crashes"
-        cmd += f" -v -v {self.config['count']}"
+    def _load_system_packages(self):
+        with self.console.status("[bold cyan]正在拉取所有系统应用列表...[/bold cyan]"):
+            sys_pkgs = self._get_packages("-s")
+        if sys_pkgs:
+            self.config["packages"] = sys_pkgs
+            self._save_config()
+            self.console.print(
+                Panel(
+                    f"[bold green]✔ 已加载全量系统应用[/bold green]\n"
+                    f"数量: [cyan]{len(sys_pkgs)}[/cyan] 个",
+                    border_style="green",
+                )
+            )
+        else:
+            self.console.print("[red]❌ 未获取到系统应用列表[/red]")
+        time.sleep(1.5)
 
+    # ----------------------------------------------------------
+    # [OPT-1 NEW] 子菜单: 事件配比可视化配置
+    # ----------------------------------------------------------
+
+    def _config_event_pct(self):
+        self.console.clear()
+        pct = self.config["pct"]
+        self.console.print(
+            Panel("[bold cyan]⚡ 事件配比配置[/bold cyan]", style="cyan")
+        )
+
+        # 显示当前配置
+        cur = Table.grid(padding=(0, 2))
+        for k, v in pct.items():
+            cur.add_row(f"[cyan]{k.capitalize()}:[/cyan]", f"{v}%")
+        self.console.print(Panel(cur, title="当前配比", border_style="dim"))
+
+        # 推荐方案
+        presets = Table.grid(padding=(0, 2))
+        presets.add_row(
+            "[yellow]1[/yellow]",
+            "🎵 媒体场景  Touch:50 Motion:30 AppSwitch:10 SysKey:5 Any:5",
+        )
+        presets.add_row(
+            "[yellow]2[/yellow]",
+            "🗺️  导航场景  Touch:60 Motion:20 AppSwitch:10 SysKey:5 Any:5",
+        )
+        presets.add_row(
+            "[yellow]3[/yellow]",
+            "⚙️  设置场景  Touch:40 Motion:15 AppSwitch:25 SysKey:15 Any:5",
+        )
+        presets.add_row(
+            "[yellow]4[/yellow]",
+            "🏗️  默认均衡  Touch:40 Motion:25 AppSwitch:15 SysKey:5 Any:15",
+        )
+        presets.add_row("[yellow]5[/yellow]", "✏️  手动自定义")
+        self.console.print(Panel(presets, title="预设方案", border_style="yellow"))
+
+        c = Prompt.ask("选择").strip()
+        preset_map = {
+            "1": {
+                "touch": 50,
+                "motion": 30,
+                "appswitch": 10,
+                "syskeys": 5,
+                "anyevent": 5,
+            },
+            "2": {
+                "touch": 60,
+                "motion": 20,
+                "appswitch": 10,
+                "syskeys": 5,
+                "anyevent": 5,
+            },
+            "3": {
+                "touch": 40,
+                "motion": 15,
+                "appswitch": 25,
+                "syskeys": 15,
+                "anyevent": 5,
+            },
+            "4": {
+                "touch": 40,
+                "motion": 25,
+                "appswitch": 15,
+                "syskeys": 5,
+                "anyevent": 15,
+            },
+        }
+        if c in preset_map:
+            self.config["pct"] = preset_map[c]
+        elif c == "5":
+            try:
+                self.config["pct"]["touch"] = int(
+                    Prompt.ask("Touch %", default=str(pct["touch"]))
+                )
+                self.config["pct"]["motion"] = int(
+                    Prompt.ask("Motion %", default=str(pct["motion"]))
+                )
+                self.config["pct"]["appswitch"] = int(
+                    Prompt.ask("AppSwitch %", default=str(pct["appswitch"]))
+                )
+                self.config["pct"]["syskeys"] = int(
+                    Prompt.ask("SysKeys %", default=str(pct["syskeys"]))
+                )
+                self.config["pct"]["anyevent"] = int(
+                    Prompt.ask("AnyEvent %", default=str(pct["anyevent"]))
+                )
+                total = sum(self.config["pct"].values())
+                if total != 100:
+                    self.console.print(
+                        f"[yellow]⚠ 合计 {total}% ≠ 100%，Monkey 会自动归一化[/yellow]"
+                    )
+            except ValueError:
+                self.console.print("[red]输入无效，已取消[/red]")
+                time.sleep(0.8)
+                return
+
+        self._save_config()
+        self.console.print("[green]✔ 事件配比已保存[/green]")
+        time.sleep(0.8)
+
+    # ----------------------------------------------------------
+    # [NEW-3] 子菜单: IVI 场景预置模板
+    # ----------------------------------------------------------
+
+    def _apply_scene_template(self):
+        self.console.clear()
+        self.console.print(
+            Panel("[bold magenta]🚗 IVI 场景预置模板[/bold magenta]", style="magenta")
+        )
+
+        t = Table(box=box.ROUNDED, expand=True, border_style="magenta")
+        t.add_column("ID", width=4, style="bold yellow")
+        t.add_column("场景名称", style="bold white")
+        t.add_column("描述", style="dim")
+        t.add_column("事件数", justify="right", style="cyan")
+        t.add_column("间隔ms", justify="right", style="cyan")
+        for key, tpl in IVI_SCENE_TEMPLATES.items():
+            t.add_row(
+                key, tpl["name"], tpl["desc"], f"{tpl['count']:,}", str(tpl["throttle"])
+            )
+        self.console.print(t)
+
+        c = Prompt.ask("选择模板 ID [dim](0 返回)[/dim]", default="0")
+        if c not in IVI_SCENE_TEMPLATES:
+            return
+
+        tpl = IVI_SCENE_TEMPLATES[c]
+        self.config["count"] = tpl["count"]
+        self.config["throttle"] = tpl["throttle"]
+        self.config["pct"] = dict(tpl["pct"])
+
+        # 自动匹配包名
+        if tpl["keywords"]:
+            with self.console.status("[cyan]正在匹配相关应用...[/cyan]"):
+                all_pkgs = self._get_packages("")
+                matched = [
+                    p
+                    for p in all_pkgs
+                    if any(kw in p.lower() for kw in tpl["keywords"])
+                ]
+            if matched:
+                self.config["packages"] = matched
+                self.console.print(
+                    Panel(
+                        f"[green]✔ 自动匹配到 {len(matched)} 个相关应用[/green]\n"
+                        + "\n".join(f"  • {p}" for p in matched[:10])
+                        + (
+                            f"\n  ... 还有 {len(matched)-10} 个"
+                            if len(matched) > 10
+                            else ""
+                        ),
+                        border_style="green",
+                    )
+                )
+            else:
+                self.config["packages"] = []
+                self.console.print(
+                    "[yellow]⚠ 未匹配到相关包名，将进行全系统压测[/yellow]"
+                )
+        else:
+            # 全系统拉力赛 → 加载所有系统包
+            with self.console.status("[cyan]正在加载系统应用列表...[/cyan]"):
+                self.config["packages"] = self._get_packages("-s")
+
+        self._save_config()
+        self.console.print(f"\n[bold green]✔ 已应用场景: {tpl['name']}[/bold green]")
+        time.sleep(1.5)
+
+    # ----------------------------------------------------------
+    # [NEW-6] 历史记录查看
+    # ----------------------------------------------------------
+
+    def _show_history(self):
+        self.console.clear()
+        if not self._history:
+            self.console.print(Panel("[dim]暂无历史记录[/dim]", title="历史测试记录"))
+            Prompt.ask("按回车返回")
+            return
+
+        t = Table(
+            title=f"📊 历史测试记录 (最近 {len(self._history)} 次)",
+            box=box.ROUNDED,
+            expand=True,
+            border_style="blue",
+        )
+        t.add_column("ID", width=4, style="dim")
+        t.add_column("时间", style="cyan")
+        t.add_column("包名", style="white")
+        t.add_column("事件数", justify="right")
+        t.add_column("Crash", justify="right", style="bold red")
+        t.add_column("ANR", justify="right", style="bold yellow")
+        t.add_column("评分", justify="right", style="bold green")
+        t.add_column("Seed", style="dim")
+
+        for i, rec in enumerate(reversed(self._history), 1):
+            pkg_str = ", ".join(rec.get("packages", [])[:2])
+            if len(rec.get("packages", [])) > 2:
+                pkg_str += f"... +{len(rec['packages'])-2}"
+            if not pkg_str:
+                pkg_str = "全系统"
+            t.add_row(
+                str(i),
+                rec.get("start_time", "")[:16],
+                pkg_str[:40],
+                f"{rec.get('events_injected', 0):,}",
+                str(rec.get("crash", 0)),
+                str(rec.get("anr", 0)),
+                str(rec.get("score", "?")),
+                str(rec.get("seed", "random")),
+            )
+
+        self.console.print(t)
+
+        c = Prompt.ask("\n[dim]输入 ID 查看详情，或按回车返回[/dim]", default="")
+        if c.isdigit():
+            idx = len(self._history) - int(c)
+            if 0 <= idx < len(self._history):
+                rec = self._history[idx]
+                self.console.print(
+                    Panel(
+                        json.dumps(rec, ensure_ascii=False, indent=2),
+                        title="📋 详细记录",
+                        border_style="cyan",
+                    )
+                )
+                Prompt.ask("按回车返回")
+
+    # ----------------------------------------------------------
+    # [NEW-2] Crash 复现引擎
+    # ----------------------------------------------------------
+
+    def _replay_crash_seed(self):
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold red]🔁 Crash 复现引擎[/bold red]\n"
+                "[dim]使用历史 Seed 精准复现崩溃场景[/dim]",
+                border_style="red",
+            )
+        )
+
+        # 列出有 seed 的历史记录
+        seeded = [(i, r) for i, r in enumerate(self._history) if r.get("seed")]
+        if not seeded:
+            self.console.print(
+                "[yellow]⚠ 暂无可复现的历史记录 (需要有保存 Seed 的记录)[/yellow]"
+            )
+            Prompt.ask("按回车返回")
+            return
+
+        t = Table(box=box.ROUNDED, expand=True, border_style="red")
+        t.add_column("ID", width=4)
+        t.add_column("时间", style="cyan")
+        t.add_column("Seed", style="bold yellow")
+        t.add_column("Crash", style="bold red")
+        t.add_column("包名", style="dim")
+        for seq, (i, rec) in enumerate(seeded[-10:], 1):
+            t.add_row(
+                str(seq),
+                rec.get("start_time", "")[:16],
+                str(rec.get("seed", "")),
+                str(rec.get("crash", 0)),
+                ", ".join(rec.get("packages", [])[:2]) or "全系统",
+            )
+        self.console.print(t)
+
+        manual_seed = Prompt.ask(
+            "\n输入 Seed 值 [dim](或输入 ID 从历史选择)[/dim]", default=""
+        ).strip()
+        if not manual_seed:
+            return
+
+        # 判断是 ID 还是直接 seed
+        if manual_seed.isdigit() and 1 <= int(manual_seed) <= len(seeded):
+            _, rec = seeded[int(manual_seed) - 1]
+            seed_val = rec["seed"]
+            if rec.get("packages"):
+                self.config["packages"] = rec["packages"]
+            self.console.print(
+                f"[cyan]已载入历史配置: Seed={seed_val}，包名已恢复[/cyan]"
+            )
+        else:
+            seed_val = manual_seed
+
+        self.config["seed"] = seed_val
+        self._save_config()
+
+        count = Prompt.ask(
+            "复现事件数 (建议与原始相同)", default=str(self.config["count"])
+        )
+        try:
+            self.config["count"] = int(count)
+        except ValueError:
+            pass
+
+        self.console.print(
+            Panel(
+                f"[bold yellow]⚠ 复现模式[/bold yellow]\n"
+                f"Seed: [bold white]{seed_val}[/bold white]\n"
+                f"将使用相同 Seed 重跑测试，理论上可复现相同 Crash",
+                border_style="yellow",
+            )
+        )
+
+        if Prompt.ask("确认开始复现?", choices=["y", "n"], default="y") == "y":
+            self.run_test(replay_mode=True)
+
+    # ----------------------------------------------------------
+    # [NEW-1] 多轮对比压测
+    # ----------------------------------------------------------
+
+    def _run_compare_test(self):
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold red]🔄 多轮对比压测 (Baseline vs Stress)[/bold red]\n"
+                "[dim]运行多轮测试，统计稳定性趋势，适用于 OTA 前后对比[/dim]",
+                border_style="red",
+            )
+        )
+
+        try:
+            rounds = int(Prompt.ask("测试轮数", default="3"))
+            events = int(
+                Prompt.ask("每轮事件数", default=str(self.config["count"] // 3))
+            )
+        except ValueError:
+            self.console.print("[red]输入无效[/red]")
+            time.sleep(1)
+            return
+
+        self.console.print(
+            Panel(
+                f"计划执行 [bold]{rounds}[/bold] 轮 × [bold]{events:,}[/bold] 事件",
+                border_style="dim",
+            )
+        )
+        if Prompt.ask("确认开始?", choices=["y", "n"], default="y") == "n":
+            return
+
+        round_results = []
+
+        for r in range(1, rounds + 1):
+            self.console.print(f"\n[bold cyan]━━━ 第 {r}/{rounds} 轮 ━━━[/bold cyan]")
+            analyzer = self._run_single_round(events, f"compare_r{r}")
+            score = max(0, 100 - analyzer.crash_count * 5 - analyzer.anr_count * 3)
+            round_results.append(
+                {
+                    "round": r,
+                    "crash": analyzer.crash_count,
+                    "anr": analyzer.anr_count,
+                    "events": analyzer.events_injected,
+                    "score": score,
+                }
+            )
+
+        # 汇总报告
+        self.console.clear()
+        self.console.print(
+            Panel("[bold green]📊 多轮对比报告[/bold green]", border_style="green")
+        )
+        rt = Table(box=box.SIMPLE_HEAD, expand=True)
+        rt.add_column("轮次", justify="center")
+        rt.add_column("Crash", justify="right", style="red")
+        rt.add_column("ANR", justify="right", style="yellow")
+        rt.add_column("注入事件", justify="right")
+        rt.add_column("稳定性评分", justify="right", style="bold green")
+        for res in round_results:
+            rt.add_row(
+                f"第 {res['round']} 轮",
+                str(res["crash"]),
+                str(res["anr"]),
+                f"{res['events']:,}",
+                str(res["score"]),
+            )
+        self.console.print(rt)
+
+        avg_score = sum(r["score"] for r in round_results) / len(round_results)
+        total_crash = sum(r["crash"] for r in round_results)
+        trend = "📈 趋势: " + (
+            "稳定"
+            if all(r["crash"] == 0 for r in round_results)
+            else "波动" if total_crash < rounds * 2 else "不稳定"
+        )
+        self.console.print(
+            Panel(
+                f"平均稳定性评分: [bold green]{avg_score:.1f}/100[/bold green]\n"
+                f"总崩溃次数: [red]{total_crash}[/red] | {trend}",
+                border_style="green",
+            )
+        )
+        Prompt.ask("\n按回车返回")
+
+    def _run_single_round(self, count: int, tag: str) -> "MonkeyLogAnalyzer":
+        """执行单轮压测并返回分析器 (供对比压测调用)"""
+        analyzer = MonkeyLogAnalyzer()
+        ts_tag = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_path = os.path.join(self.save_dir, f"monkey_{tag}_{ts_tag}.log")
+
+        cmd = self._build_cmd(count_override=count)
         full_cmd = f"adb -s {self.driver.device_id} shell {cmd}"
-
-        self.is_running = True
-        stats = {"crash": 0, "anr": 0, "progress": 0}
 
         startupinfo = None
         if platform.system() == "Windows":
@@ -4822,14 +6196,125 @@ class MonkeyTester:
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         try:
-            self.console.print(
-                Panel(
-                    f"[dim]{cmd}[/dim]", title="正在执行工业级指令", border_style="dim"
-                )
+            proc = subprocess.Popen(
+                full_cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                startupinfo=startupinfo,
             )
-            self.console.print(f"[cyan]📝 完整日志将保存至: {log_filename}[/cyan]")
+            with open(log_path, "w", encoding="utf-8") as lf:
+                lf.write(f"--- Round: {tag} | Start: {ts_tag} ---\n")
+                with Live(refresh_per_second=2) as live:
+                    while proc.poll() is None:
+                        line = proc.stdout.readline()
+                        if not line:
+                            break
+                        lf.write(line)
+                        event_type, payload = analyzer.feed(line.strip())
+                        pct = (
+                            min(100, int(analyzer.events_injected / count * 100))
+                            if count
+                            else 0
+                        )
+                        bar = "█" * (pct // 5) + "░" * (20 - pct // 5)
+                        live.update(
+                            Panel(
+                                f"[{bar}] {pct}%  Crash:[red]{analyzer.crash_count}[/red] ANR:[yellow]{analyzer.anr_count}[/yellow]",
+                                title=f"[cyan]{tag}[/cyan]",
+                                border_style="cyan",
+                            )
+                        )
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self._kill_monkey()
 
-            # 使用 Popen 实时获取流
+        return analyzer
+
+    # ----------------------------------------------------------
+    # [BUG-1 FIX + ALL OPT] 核心压测引擎
+    # ----------------------------------------------------------
+
+    # ╔══════════════════════════════════════════════════════════╗
+    # ║  PATCH-2: run_test() 完整方法 (完整替换)                 ║
+    # ╚══════════════════════════════════════════════════════════╝
+    def run_test(self, replay_mode: bool = False):
+        """
+        主压测引擎 — 内存增强版
+        新增: 内存预警/自动停止/泄漏检测/趋势图
+        """
+        import platform as _platform
+
+        self.console.clear()
+
+        ts_tag = datetime.now().strftime("%Y%m%d_%H%M%S")
+        start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_filename = f"monkey_{self.driver.device_id}_{ts_tag}.log"
+        log_path = os.path.join(self.save_dir, log_filename)
+
+        cmd = self._build_cmd()
+        full_cmd = f"adb -s {self.driver.device_id} shell {cmd}"
+
+        mode_label = (
+            "[bold red]🔁 复现模式[/bold red]"
+            if replay_mode
+            else "[bold green]🚀 压测模式[/bold green]"
+        )
+        self.console.print(
+            Panel(
+                f"{mode_label}\n[dim]{cmd[:120]}{'...' if len(cmd) > 120 else ''}[/dim]",
+                title="正在执行工业级指令",
+                border_style="dim",
+            )
+        )
+        self.console.print(f"[cyan]📝 日志: {log_filename}[/cyan]")
+
+        # ── 初始化分析器 ──────────────────────────────────
+        analyzer = MonkeyLogAnalyzer()
+        mem_alerts: List[str] = []  # 收集所有预警消息
+
+        # ── 内存预警回调 ──────────────────────────────────
+        def _mem_alert_handler(level: str, mem_val: float):
+            if level == "critical":
+                msg = (
+                    f"[bold red]🔴 内存严重不足 {mem_val:.0f}MB "
+                    f"< {ResourceMonitor.MEM_CRITICAL_MB}MB，已自动停止压测！[/bold red]"
+                )
+                mem_alerts.append(msg)
+                self.is_running = False  # 通知主循环停止
+                self._kill_monkey()  # 立即终止 Monkey
+            elif level == "warn":
+                msg = (
+                    f"[yellow]⚠️  内存预警 {mem_val:.0f}MB "
+                    f"< {ResourceMonitor.MEM_WARN_MB}MB，请注意[/yellow]"
+                )
+                mem_alerts.append(msg)
+            elif level == "leak":
+                msg = (
+                    f"[yellow]🔍 疑似内存泄漏：可用内存已从基线下降 >40%"
+                    f"（当前 {mem_val:.0f}MB）[/yellow]"
+                )
+                mem_alerts.append(msg)
+
+        # ── 启动资源监控 (传入回调) ───────────────────────
+        monitor = ResourceMonitor(
+            device_id=self.driver.device_id,
+            on_mem_alert=_mem_alert_handler,
+        )
+        monitor.start()
+
+        self.is_running = True
+
+        startupinfo = None
+        if _platform.system() == "Windows":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        try:
             proc = subprocess.Popen(
                 full_cmd,
                 shell=True,
@@ -4841,69 +6326,131 @@ class MonkeyTester:
                 startupinfo=startupinfo,
             )
 
-            # 打开文件，准备双工写入
+            meta = {
+                "start_time": start_time,
+                "ts_tag": ts_tag,
+                "device_id": self.driver.device_id,
+                "packages": self.config["packages"],
+                "count": self.config["count"],
+                "throttle": self.config["throttle"],
+                "seed": self.config["seed"],
+            }
+
             with open(log_path, "w", encoding="utf-8") as log_file:
-                # 写入头部元数据
-                log_file.write(f"--- Monkey Test Start: {ts} ---\n")
+                log_file.write(f"--- Monkey Test Start: {start_time} ---\n")
+                log_file.write(f"Mode: {'REPLAY' if replay_mode else 'NORMAL'}\n")
                 log_file.write(f"Packages: {self.config['packages']}\n")
                 log_file.write(f"Command: {full_cmd}\n")
-                log_file.write("-" * 50 + "\n")
+                log_file.write("-" * 60 + "\n")
 
                 with Live(refresh_per_second=4) as live:
                     while self.is_running and proc.poll() is None:
-                        line = proc.stdout.readline()
-                        if not line:
+                        try:
+                            line = proc.stdout.readline()
+                        except Exception:
                             break
 
-                        # [关键] 实时写入文件
-                        log_file.write(line)
+                        line_s = ""
+                        event_type = None
+                        payload = None
 
-                        line = line.strip()
-                        if not line:
-                            continue
+                        if line:
+                            log_file.write(line)
+                            log_file.flush()
+                            line_s = line.strip()
+                            event_type, payload = analyzer.feed(line_s)
 
-                        # 实时分析
-                        if "// CRASH" in line or "FATAL" in line:
-                            stats["crash"] += 1
-                        if "// NOT RESPONDING" in line or "ANR" in line:
-                            stats["anr"] += 1
-                        if "Events injected:" in line:
-                            try:
-                                stats["progress"] = int(line.split()[-1])
-                            except:
-                                pass
+                            if event_type == "crash":
+                                self._auto_screenshot("crash", str(payload))
+                            elif event_type == "anr":
+                                self._auto_screenshot("anr", str(payload))
 
-                        # 进度条模拟
+                        # ── 进度计算 ──────────────────────
                         pct = 0
                         if self.config["count"] > 0:
                             pct = min(
                                 100,
-                                int((stats["progress"] / self.config["count"]) * 100),
+                                int(
+                                    analyzer.events_injected
+                                    / self.config["count"]
+                                    * 100
+                                ),
                             )
                         bar = "█" * (pct // 5) + "░" * (20 - pct // 5)
 
-                        # 构建实时面板
-                        grid = Table.grid(expand=True)
-                        grid.add_column(ratio=1)
-                        grid.add_row(f"[bold green]🚀 Monkey 正在执行...[/bold green]")
-                        grid.add_row(
-                            f"进度: [{bar}] {pct}% ({stats['progress']}/{self.config['count']})"
-                        )
-                        grid.add_row(
-                            f"状态: [bold red]Crash: {stats['crash']}[/bold red] | [bold yellow]ANR: {stats['anr']}[/bold yellow]"
-                        )
+                        # ── 资源数据 ──────────────────────
+                        res = monitor.latest()
+                        cpu_val = res["cpu"]
+                        mem_val = res["mem"]
+                        leak_pct = res.get("leak_pct", 0.0)
 
-                        # 显示最新日志 (截断)
-                        display_line = line[:100] + "..." if len(line) > 100 else line
+                        # CPU 颜色
+                        cpu_color = (
+                            "green"
+                            if cpu_val < 60
+                            else "yellow" if cpu_val < 85 else "red"
+                        )
+                        cpu_str = f"[{cpu_color}]CPU:{cpu_val:.0f}%[/{cpu_color}]"
+
+                        # 内存颜色
+                        if mem_val > 0 and mem_val < ResourceMonitor.MEM_CRITICAL_MB:
+                            mem_color = "red"
+                        elif mem_val > 0 and mem_val < ResourceMonitor.MEM_WARN_MB:
+                            mem_color = "yellow"
+                        else:
+                            mem_color = "green"
+
+                        mem_str = f"[{mem_color}]RAM:{mem_val:.0f}MB[/{mem_color}]"
+
+                        # 泄漏提示
+                        if leak_pct >= 20:
+                            mem_str += f" [yellow]↓{leak_pct:.0f}%[/yellow]"
+
+                        # 基线行
+                        baseline_str = ""
+                        if monitor.baseline_mem:
+                            baseline_str = (
+                                f"[dim]基线:{monitor.baseline_mem:.0f}MB[/dim]"
+                            )
+
+                        # 边框颜色
                         border_color = "cyan"
-                        if "CRASH" in line:
+                        if mem_val > 0 and mem_val < ResourceMonitor.MEM_CRITICAL_MB:
                             border_color = "red"
-                        elif "ANR" in line:
+                        elif event_type == "crash":
+                            border_color = "red"
+                        elif event_type == "anr" or (
+                            mem_val > 0 and mem_val < ResourceMonitor.MEM_WARN_MB
+                        ):
                             border_color = "yellow"
 
+                        # ── 实时面板 ──────────────────────
+                        g = Table.grid(expand=True)
+                        g.add_column(ratio=1)
+                        g.add_row(
+                            f"[bold green]🐒 Monkey Running"
+                            f"{'  🔁 REPLAY' if replay_mode else ''}[/bold green]"
+                        )
+                        g.add_row(
+                            f"进度: [{bar}] {pct}%  "
+                            f"({analyzer.events_injected:,}/"
+                            f"{self.config['count']:,})"
+                        )
+                        g.add_row(
+                            f"[red]💥Crash:{analyzer.crash_count}[/red]  "
+                            f"[yellow]⏳ANR:{analyzer.anr_count}[/yellow]  "
+                            f"{cpu_str}  {mem_str}  {baseline_str}"
+                        )
+                        # 最新预警显示在第4行
+                        if mem_alerts:
+                            g.add_row(mem_alerts[-1])
+
+                        display_line = line_s[:100] + (
+                            "..." if len(line_s) > 100 else ""
+                        )
                         live.update(
                             Panel(
-                                grid,
+                                g,
                                 subtitle=f"[dim]{display_line}[/dim]",
                                 border_style=border_color,
                             )
@@ -4911,29 +6458,195 @@ class MonkeyTester:
 
         except KeyboardInterrupt:
             self.console.print(
-                "\n[yellow]检测到用户停止，正在查杀 Monkey 进程...[/yellow]"
+                "\n[yellow]⚠ 检测到用户停止，正在终止 Monkey...[/yellow]"
             )
+        except Exception as e:
+            self.console.print(f"\n[red]压测异常: {e}[/red]")
         finally:
             self.is_running = False
-            self._kill_monkey()
+            monitor.stop()
 
-            # 结果汇总
-            self.console.print(f"\n[green]✔ 压测结束。[/green]")
-            self.console.print(
-                f"📊 统计: Crash: [red]{stats['crash']}[/red] | ANR: [yellow]{stats['anr']}[/yellow]"
-            )
-            self.console.print(
-                f"📂 日志已保存: [underline cyan]{log_path}[/underline cyan]"
+            killed = self._kill_monkey()
+            kill_status = (
+                "[green]✔ 已终止[/green]" if killed else "[yellow]⚠ 可能有残留[/yellow]"
             )
 
-            # Windows下自动打开文件夹
-            if platform.system() == "Windows":
+            # ── 打印内存预警汇总 ──────────────────────────
+            if mem_alerts:
+                self.console.print(
+                    Panel(
+                        "\n".join(mem_alerts),
+                        title="[bold yellow]⚠️  内存监控预警记录[/bold yellow]",
+                        border_style="yellow",
+                    )
+                )
+
+            # ── 计算稳定性评分 ────────────────────────────
+            score = max(0, 100 - analyzer.crash_count * 5 - analyzer.anr_count * 3)
+            score_color = "green" if score >= 80 else "yellow" if score >= 50 else "red"
+
+            res_summary = monitor.summary()
+            seed_display = analyzer.seed_used or self.config.get("seed") or "random"
+
+            # ── 终端汇总面板 ──────────────────────────────
+            sg = Table.grid(expand=True, padding=(0, 1))
+            sg.add_column(style="cyan", justify="right")
+            sg.add_column(style="white")
+            sg.add_column(style="cyan", justify="right")
+            sg.add_column(style="white")
+
+            sg.add_row(
+                "稳定性评分:",
+                f"[bold {score_color}]{score}/100[/bold {score_color}]",
+                "进程状态:",
+                kill_status,
+            )
+            sg.add_row(
+                "Crash 总计:",
+                f"[bold red]{analyzer.crash_count}[/bold red]",
+                "ANR 总计:",
+                f"[bold yellow]{analyzer.anr_count}[/bold yellow]",
+            )
+            sg.add_row(
+                "注入事件:",
+                f"{analyzer.events_injected:,}",
+                "使用 Seed:",
+                str(seed_display),
+            )
+
+            if res_summary:
+                sg.add_row(
+                    "CPU 均值:",
+                    f"{res_summary.get('cpu_avg', 0):.1f}%",
+                    "CPU 峰值:",
+                    f"{res_summary.get('cpu_max', 0):.1f}%",
+                )
+                sg.add_row(
+                    "RAM 起始:",
+                    f"{res_summary.get('mem_start_mb', 0):.0f} MB",
+                    "RAM 最低:",
+                    f"{res_summary.get('mem_min_mb',   0):.0f} MB",
+                )
+
+                drop_mb = res_summary.get("mem_drop_mb", 0)
+                leak_pct_v = res_summary.get("leak_pct", 0)
+                drop_color = (
+                    "red" if drop_mb > 200 else "yellow" if drop_mb > 100 else "green"
+                )
+                leak_label = (
+                    "[bold red]⚠ 疑似泄漏[/bold red]"
+                    if leak_pct_v >= 40
+                    else (
+                        "[yellow]轻微下降[/yellow]"
+                        if leak_pct_v >= 20
+                        else "[green]正常[/green]"
+                    )
+                )
+                sg.add_row(
+                    "内存下降:",
+                    f"[{drop_color}]{drop_mb:.0f} MB ({leak_pct_v:.0f}%)[/{drop_color}]",
+                    "泄漏诊断:",
+                    leak_label,
+                )
+
+            top_c = analyzer.top_crashes(3)
+            if top_c:
+                sg.add_row(
+                    "Top Crashes:",
+                    "  |  ".join(f"{p}×{n}" for p, n in top_c),
+                    "",
+                    "",
+                )
+
+            self.console.print(
+                Panel(
+                    sg,
+                    title="[bold green]✅ 压测完成 — 测试报告[/bold green]",
+                    border_style="green",
+                )
+            )
+            self.console.print(
+                f"[cyan]📂 日志: [underline]{log_path}[/underline][/cyan]"
+            )
+
+            # ── 生成 HTML + JSON 报告 ─────────────────────
+            try:
+                report_path = analyzer.generate_html_report(
+                    meta,
+                    log_path,
+                    self.save_dir,
+                    resource_summary=res_summary,  # ← 传入资源数据
+                )
+                self.console.print(
+                    f"[magenta]📊 HTML 报告: "
+                    f"[underline]{report_path}[/underline][/magenta]"
+                )
+                json_path = report_path.replace(".html", ".json")
+                with open(json_path, "w", encoding="utf-8") as jf:
+                    json.dump(
+                        {**analyzer.to_dict(meta), "resource": res_summary},
+                        jf,
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+            except Exception as e:
+                self.console.print(f"[yellow]⚠ 报告生成失败: {e}[/yellow]")
+
+            # ── 写入历史记录 ──────────────────────────────
+            history_record = {
+                "start_time": start_time,
+                "device_id": self.driver.device_id,
+                "packages": self.config["packages"],
+                "count": self.config["count"],
+                "events_injected": analyzer.events_injected,
+                "crash": analyzer.crash_count,
+                "anr": analyzer.anr_count,
+                "score": score,
+                "seed": seed_display,
+                "log_file": log_filename,
+                # ── 新增内存字段 ──
+                "cpu_avg": res_summary.get("cpu_avg", 0),
+                "mem_start_mb": res_summary.get("mem_start_mb", 0),
+                "mem_end_mb": res_summary.get("mem_end_mb", 0),
+                "mem_min_mb": res_summary.get("mem_min_mb", 0),
+                "mem_drop_mb": res_summary.get("mem_drop_mb", 0),
+                "leak_pct": res_summary.get("leak_pct", 0),
+                "mem_alerts": mem_alerts,
+            }
+            self._save_history(history_record)
+
+            if _platform.system() == "Windows":
                 try:
                     os.startfile(self.save_dir)
-                except:
+                except Exception:
                     pass
 
-            Prompt.ask("按回车返回")
+            Prompt.ask("\n按回车返回")
+
+# ============================================================
+# 集成说明 (Integration Guide)
+# ============================================================
+#
+# 步骤 1: 将本文件内容替换原 MonkeyTester 类及上下方的重复注释块
+#          (原文件第 4710 ~ 5107 行)
+#
+# 步骤 2: 在 CarHouseKeepApp.__init__ 中修改初始化方式:
+#
+#   # 原来:
+#   self.monkey_tool = MonkeyTester(self.driver, self.console)
+#
+#   # 改为 (传入 config_loader 和 screenshot_mgr):
+#   self.monkey_tool = MonkeyTester(
+#       driver         = self.driver,
+#       console        = self.console,
+#       config_loader  = self.config,        # ConfigLoader 实例
+#       screenshot_mgr = self.screenshot_mgr # ScreenshotManager 实例
+#   )
+#
+# 步骤 3: 无需修改主菜单 (入口仍是 self.monkey_tool.config_menu())
+#
+# 步骤 4: 新增依赖均为标准库，无需额外 pip install
+# ============================================================
 
 
 # ==========================================
@@ -5547,6 +7260,2510 @@ class MaterialCenter:
 
 
 # ==========================================
+# PcmAudioCenter — 车机音频诊断中心
+# 集成到 ivi_toolbox.py
+# 依赖: wave(标准库), numpy(可选), rich(已有)
+# ==========================================
+
+import os
+import wave
+import json
+import time
+import struct
+import threading
+from pathlib import Path
+from datetime import datetime
+from typing import Optional, List, Dict, Tuple
+
+# rich 在主文件已导入，这里备注
+# from rich.console import Console
+# from rich.table import Table
+# from rich.panel import Panel
+# from rich.prompt import Prompt
+# from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+# from rich.live import Live
+# from rich import box
+
+try:
+    import numpy as np
+
+    _NUMPY = True
+except ImportError:
+    _NUMPY = False
+
+
+class PcmAudioCenter:
+    """
+    车机音频诊断中心
+    功能：录音控制 / PCM提取 / WAV转换 / 音频分析 /
+          实时监控 / 问题诊断 / 历史管理 / 设备音频信息采集
+    """
+
+    # ── 设备侧固定路径 ──────────────────────────────
+    DEVICE_DATA_DIR = "/data"
+    DEVICE_SAVE_PCM = "/data/save_pcm"
+    DEVICE_SAVE_MIC = "/data/save_mic"
+
+    # ── PCM 文件清单（可在配置中扩展）────────────────
+    DEFAULT_PCM_FILES = [
+        "media",
+        "navi",
+        "vr_play",
+        "micref",
+        "sub_play",
+        "avas_play",
+        "icall",
+        "fm-in",
+        "fm-out",
+    ]
+
+    # ── 每个文件名对应的音频参数预设 ─────────────────
+    PRESETS: Dict[str, Dict] = {
+        "media": {"rate": 48000, "channels": 2, "width": 2, "desc": "媒体播放"},
+        "navi": {"rate": 48000, "channels": 2, "width": 2, "desc": "导航语音"},
+        "vr_play": {"rate": 16000, "channels": 1, "width": 2, "desc": "语音识别播报"},
+        "micref": {"rate": 16000, "channels": 1, "width": 2, "desc": "MIC参考信号"},
+        "sub_play": {"rate": 48000, "channels": 2, "width": 2, "desc": "子屏播放"},
+        "avas_play": {"rate": 48000, "channels": 1, "width": 2, "desc": "AVAS提示音"},
+        "icall": {"rate": 8000, "channels": 1, "width": 2, "desc": "车载通话"},
+        "fm-in": {"rate": 44100, "channels": 2, "width": 2, "desc": "FM输入"},
+        "fm-out": {"rate": 44100, "channels": 2, "width": 2, "desc": "FM输出"},
+        "default": {"rate": 48000, "channels": 2, "width": 2, "desc": "通用"},
+    }
+
+    # ── 静音判定阈值（RMS占满幅比例）────────────────
+    SILENCE_THRESHOLD = 0.01  # < 1% 满幅 → 静音
+
+    def __init__(self, driver, console, config=None):
+        self.driver = driver
+        self.console = console
+        self.config = config
+
+        # 本地会话根目录
+        self.sessions_dir = os.path.join(os.getcwd(), "pcm_sessions")
+        os.makedirs(self.sessions_dir, exist_ok=True)
+
+        # 当前会话目录（开始录音时创建）
+        self._session_dir: Optional[str] = None
+        self._recording = False
+
+        # 从 config 加载用户自定义 PCM 文件列表和预设
+        if config:
+            pcm_cfg = config.get("pcm", {})
+            user_files = pcm_cfg.get("pcm_files", [])
+            if user_files:
+                self.pcm_files = user_files
+            else:
+                self.pcm_files = list(self.DEFAULT_PCM_FILES)
+
+            user_presets = pcm_cfg.get("presets", {})
+            self.PRESETS = {**self.PRESETS, **user_presets}
+        else:
+            self.pcm_files = list(self.DEFAULT_PCM_FILES)
+
+    # ══════════════════════════════════════════════
+    # 内部工具
+    # ══════════════════════════════════════════════
+
+    def _adb(self, cmd: str, timeout: int = 15) -> Tuple[bool, str]:
+        return self.driver.run(cmd, timeout=timeout)
+
+    def _shell(self, cmd: str, timeout: int = 15) -> Tuple[bool, str]:
+        # 【核心修复】: 外层加上双引号，防止 Windows CMD 拦截 &&, ||, <, | 等特殊符号
+        return self.driver.run(f'shell "{cmd}"', timeout=timeout)
+
+    def _new_session_dir(self) -> str:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(self.sessions_dir, f"pcm_{ts}")
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    def _get_preset(self, filename: str) -> Dict:
+        """根据文件名匹配预设，找不到返回 default"""
+        name = Path(filename).stem.lower()
+        for key, preset in self.PRESETS.items():
+            if key in name:
+                return {**preset, "_preset_name": key}
+        return {**self.PRESETS["default"], "_preset_name": "default"}
+
+    def _get_device_file_size(self, remote_path: str) -> int:
+        """获取设备上文件大小（字节），失败返回 -1"""
+        ok, out = self._shell(
+            f"stat -c %s {remote_path} 2>/dev/null || wc -c < {remote_path} 2>/dev/null"
+        )
+        try:
+            return int(out.strip().split()[0])
+        except Exception:
+            return -1
+
+    def _section(self, title: str, style: str = "cyan"):
+        from rich.panel import Panel
+
+        self.console.print(
+            Panel(f"[bold {style}]{title}[/bold {style}]", border_style=style)
+        )
+
+    # ══════════════════════════════════════════════
+    # 功能 0：环境准备（root / remount / setenforce）
+    # ══════════════════════════════════════════════
+
+    def _prepare_device(self) -> bool:
+        """确保 root + remount + SELinux Permissive"""
+        self.console.print("[cyan]  → 获取 Root 权限...[/cyan]")
+        self._adb("root")
+        time.sleep(2)
+        self._adb("wait-for-device")
+
+        ok, uid = self._shell("id")
+        if "uid=0" not in uid:
+            self.console.print("[red]  ✘ Root 失败，请先执行菜单 1 工程提权[/red]")
+            return False
+        self.console.print("[green]  ✔ Root OK[/green]")
+
+        self._adb("remount")
+        self._shell("setenforce 0")
+        self.console.print("[green]  ✔ Remount + SELinux Permissive OK[/green]")
+        return True
+
+    # ══════════════════════════════════════════════
+    # 功能 1：开始录音
+    # ══════════════════════════════════════════════
+
+    def start_recording(self) -> bool:
+        self._section("🔴 开始录音")
+
+        if not self._prepare_device():
+            return False
+
+        # 创建本次会话目录
+        self._session_dir = self._new_session_dir()
+        self.console.print(f"[dim]  会话目录: {self._session_dir}[/dim]")
+
+        # ── 清空旧 PCM，重建空文件 ──
+        self.console.print("\n[cyan]  → 清空旧 PCM 文件...[/cyan]")
+        for name in self.pcm_files:
+            remote = f"{self.DEVICE_DATA_DIR}/{name}.pcm"
+            self._shell(f"rm -f {remote} && touch {remote} && chmod 777 {remote}")
+            self.console.print(f"  [dim]  ✔ {name}.pcm 已重置[/dim]")
+        self.console.print("[green]  ✔ 所有 PCM 文件已清空重建[/green]")
+
+        # ── Push save_pcm / save_mic ──
+        self.console.print("\n[cyan]  → 推送录音程序...[/cyan]")
+        for prog in ["save_pcm", "save_mic"]:
+            if os.path.exists(prog):
+                ok, out = self._adb(f"push {prog} {self.DEVICE_DATA_DIR}/{prog}")
+                if ok:
+                    self._shell(f"chmod 777 {self.DEVICE_DATA_DIR}/{prog}")
+                    self.console.print(f"  [green]  ✔ {prog} 已推送[/green]")
+                else:
+                    self.console.print(
+                        f"  [yellow]  ⚠ {prog} 推送失败: {out[:40]}[/yellow]"
+                    )
+            else:
+                self.console.print(f"  [yellow]  ⚠ 本地未找到 {prog}，跳过[/yellow]")
+
+        self._shell("sync")
+        self._recording = True
+
+        self.console.print(
+            "\n[bold green]  ✅ 录音环境就绪！[/bold green]\n"
+            "  [dim]请在车机上触发音频场景（播放媒体/导航/通话等）[/dim]\n"
+            "  [dim]完成后选择「2 停止并提取」或「3 一键全流程」[/dim]"
+        )
+        return True
+
+    # ══════════════════════════════════════════════
+    # 功能 2：停止并提取 PCM
+    # ══════════════════════════════════════════════
+
+    def stop_and_pull(self, session_dir: str = None) -> List[str]:
+        self._section("⏹  停止并提取 PCM")
+
+        if session_dir is None:
+            if self._session_dir is None:
+                self._session_dir = self._new_session_dir()
+                self.console.print(f"[yellow]  ⚠ 未检测到录音会话，创建新目录[/yellow]")
+            session_dir = self._session_dir
+
+        self._recording = False
+
+        # ── 清理录音进程 ──
+        self.console.print("[cyan]  → 清理设备录音进程...[/cyan]")
+        # 【核心修复】：增加 pkill 彻底杀死后台录音进程，然后再删除文件
+        self._shell("pkill -f save_pcm")
+        self._shell("pkill -f save_mic")
+        time.sleep(0.5)  # 给进程退出一点时间
+        self._shell("rm -f /data/save_pcm /data/save_mic")
+        self._shell("sync")
+        time.sleep(0.5)
+
+        # ── Pull PCM 文件 ──
+        self.console.print("\n[cyan]  → 提取 PCM 文件...[/cyan]")
+
+        from rich.table import Table
+        from rich import box
+
+        table = Table(box=box.SIMPLE, show_header=True, header_style="bold cyan")
+        table.add_column("文件", style="white", width=16)
+        table.add_column("设备大小", justify="right", width=12)
+        table.add_column("状态", width=10)
+
+        pulled = []
+        for name in self.pcm_files:
+            remote = f"{self.DEVICE_DATA_DIR}/{name}.pcm"
+            local = os.path.join(session_dir, f"{name}.pcm")
+
+            size = self._get_device_file_size(remote)
+            ok, out = self._adb(f'pull {remote} "{local}"', timeout=30)
+
+            if not ok or not os.path.exists(local):
+                table.add_row(
+                    f"{name}.pcm", f"{size}B" if size >= 0 else "?", "[red]失败[/red]"
+                )
+                continue
+
+            local_size = os.path.getsize(local)
+            if local_size == 0:
+                table.add_row(f"{name}.pcm", "0 B", "[dim]空文件[/dim]")
+            else:
+                size_str = self._fmt_size(local_size)
+                table.add_row(f"{name}.pcm", size_str, "[green]✔ 已提取[/green]")
+                pulled.append(local)
+
+        self.console.print(table)
+        self.console.print(f"\n[green]  ✔ 有效文件: {len(pulled)} 个[/green]")
+
+        # 保存会话元数据
+        self._save_session_meta(
+            session_dir, {"pulled": pulled, "timestamp": datetime.now().isoformat()}
+        )
+        return pulled
+
+    # ══════════════════════════════════════════════
+    # 功能 3：一键全流程
+    # ══════════════════════════════════════════════
+
+    def full_pipeline(self):
+        self._section("⚡ 一键全流程", "yellow")
+
+        duration = Prompt.ask("  录音时长 (秒)", default="10")
+        try:
+            duration = int(duration)
+        except ValueError:
+            duration = 10
+
+        # Step1 开始录音
+        if not self.start_recording():
+            return
+
+        # Step2 倒计时
+        self.console.print(
+            f"\n[bold yellow]  ⏱ 录音中，{duration} 秒后自动停止...[/bold yellow]"
+        )
+        from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
+
+        with Progress(
+            BarColumn(bar_width=40),
+            TextColumn("[cyan]{task.description}"),
+            TimeRemainingColumn(),
+            console=self.console,
+        ) as p:
+            task = p.add_task(f"录音 {duration}s", total=duration)
+            for _ in range(duration):
+                time.sleep(1)
+                p.advance(task)
+
+        # Step3 停止提取
+        pulled = self.stop_and_pull()
+        if not pulled:
+            self.console.print("[red]  ✘ 无有效 PCM 文件，流程终止[/red]")
+            return
+
+        # Step4 转换 WAV
+        wav_files = self._batch_convert_to_wav(pulled, self._session_dir)
+
+        # Step5 分析
+        report = self._analyze_all(pulled)
+
+        # Step6 采集设备音频信息
+        self._collect_audio_info(self._session_dir)
+
+        # Step7 诊断
+        self._diagnose(report)
+
+        # Step8 生成报告
+        self._save_report(self._session_dir, report)
+
+        self.console.print(
+            f"\n[bold green]  ✅ 全流程完成！[/bold green]\n"
+            f"  [dim]会话目录: {self._session_dir}[/dim]"
+        )
+        Prompt.ask("\n  按回车继续")
+
+    # ══════════════════════════════════════════════
+    # 功能 4：提取 + 转换 WAV
+    # ══════════════════════════════════════════════
+
+    def pull_and_convert(self):
+        self._section("🔄 提取 + 转换 WAV")
+
+        if self._session_dir is None:
+            self._session_dir = self._new_session_dir()
+
+        pulled = self.stop_and_pull()
+        if not pulled:
+            self.console.print("[red]  无有效 PCM 文件[/red]")
+            Prompt.ask("\n  按回车继续")
+            return
+
+        wav_files = self._batch_convert_to_wav(pulled, self._session_dir)
+        self.console.print(
+            f"\n[green]  ✔ 转换完成，共 {len(wav_files)} 个 WAV 文件[/green]"
+        )
+        self.console.print(f"  [dim]{self._session_dir}[/dim]")
+        Prompt.ask("\n  按回车继续")
+
+    # ══════════════════════════════════════════════
+    # 功能 5：本地 PCM 批量转换
+    # ══════════════════════════════════════════════
+
+    def local_batch_convert(self):
+        self._section("📁 本地 PCM 批量转换")
+
+        src = Prompt.ask("  输入目录路径").strip().strip('"')
+        if not os.path.isdir(src):
+            self.console.print(f"[red]  目录不存在: {src}[/red]")
+            Prompt.ask("\n  按回车继续")
+            return
+
+        pcm_list = list(Path(src).glob("**/*.pcm"))
+        if not pcm_list:
+            self.console.print("[yellow]  未找到 PCM 文件[/yellow]")
+            Prompt.ask("\n  按回车继续")
+            return
+
+        out_dir = os.path.join(src, "wav_output")
+        os.makedirs(out_dir, exist_ok=True)
+
+        # 过滤空文件
+        valid = [p for p in pcm_list if p.stat().st_size > 0]
+        self.console.print(
+            f"  找到 {len(pcm_list)} 个文件，有效: [green]{len(valid)}[/green]，空文件: [dim]{len(pcm_list)-len(valid)}[/dim]"
+        )
+
+        wav_files = self._batch_convert_to_wav([str(p) for p in valid], out_dir)
+        self.console.print(f"\n[green]  ✔ 转换完成: {len(wav_files)} 个 WAV[/green]")
+        self.console.print(f"  [dim]{out_dir}[/dim]")
+        Prompt.ask("\n  按回车继续")
+
+    # ══════════════════════════════════════════════
+    # 功能 6：音频质量分析
+    # ══════════════════════════════════════════════
+
+    def analyze_menu(self):
+        self._section("🔍 音频质量分析")
+
+        # 选择来源
+        src = Prompt.ask(
+            "  分析来源\n  [1] 当前会话  [2] 指定目录",
+            choices=["1", "2"],
+            default="1",
+        )
+
+        if src == "1":
+            if not self._session_dir or not os.path.isdir(self._session_dir):
+                self.console.print("[yellow]  当前无会话目录[/yellow]")
+                Prompt.ask("\n  按回车继续")
+                return
+            pcm_list = list(Path(self._session_dir).glob("*.pcm"))
+        else:
+            path = Prompt.ask("  目录路径").strip().strip('"')
+            pcm_list = list(Path(path).glob("**/*.pcm"))
+
+        valid = [str(p) for p in pcm_list if p.stat().st_size > 0]
+        if not valid:
+            self.console.print("[yellow]  无有效 PCM 文件[/yellow]")
+            Prompt.ask("\n  按回车继续")
+            return
+
+        report = self._analyze_all(valid)
+        self._print_analysis_table(report)
+        Prompt.ask("\n  按回车继续")
+
+    # ══════════════════════════════════════════════
+    # 功能 7：实时录音监控
+    # ══════════════════════════════════════════════
+
+    def realtime_monitor(self):
+        self._section("📊 实时录音监控", "magenta")
+        self.console.print(
+            "[dim]  监控设备 /data/*.pcm 文件大小变化，Ctrl+C 退出[/dim]\n"
+        )
+
+        from rich.live import Live
+        from rich.table import Table
+        from rich import box
+
+        prev_sizes: Dict[str, int] = {}
+        stop_flag = threading.Event()
+
+        def build_table() -> Table:
+            t = Table(
+                box=box.ROUNDED,
+                expand=True,
+                show_header=True,
+                header_style="bold magenta",
+            )
+            t.add_column("PCM 文件", style="white", width=16)
+            t.add_column("当前大小", justify="right", width=12)
+            t.add_column("变化", justify="right", width=10)
+            t.add_column("状态", width=16)
+            t.add_column("趋势", width=30)
+
+            for name in self.pcm_files:
+                remote = f"{self.DEVICE_DATA_DIR}/{name}.pcm"
+                cur = self._get_device_file_size(remote)
+                prev = prev_sizes.get(name, 0)
+                delta = cur - prev if cur >= 0 else 0
+
+                if cur <= 0:
+                    status = "[dim]空[/dim]"
+                    bar = "[dim]░░░░░░░░░░[/dim]"
+                elif delta > 0:
+                    status = "[bold green]↑ 增长中[/bold green]"
+                    bar = "[green]" + "█" * min(10, delta // 10240 + 1) + "[/green]"
+                else:
+                    status = "[yellow]— 停止[/yellow]"
+                    bar = "[yellow]" + "▓" * min(10, cur // 102400) + "[/yellow]"
+
+                prev_sizes[name] = max(cur, 0)
+                t.add_row(
+                    f"{name}.pcm",
+                    self._fmt_size(cur) if cur > 0 else "0 B",
+                    f"+{self._fmt_size(delta)}" if delta > 0 else "-",
+                    status,
+                    bar,
+                )
+            return t
+
+        try:
+            with Live(
+                build_table(), console=self.console, refresh_per_second=0.5
+            ) as live:
+                while not stop_flag.is_set():
+                    time.sleep(2)
+                    live.update(build_table())
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]  监控已停止[/yellow]")
+
+    # ══════════════════════════════════════════════
+    # 功能 8：问题自动诊断
+    # ══════════════════════════════════════════════
+
+    def diagnose_menu(self):
+        self._section("🩺 问题自动诊断", "red")
+
+        if not self._session_dir or not os.path.isdir(self._session_dir):
+            self.console.print("[yellow]  请先提取 PCM 文件[/yellow]")
+            Prompt.ask("\n  按回车继续")
+            return
+
+        pcm_list = [
+            str(p)
+            for p in Path(self._session_dir).glob("*.pcm")
+            if p.stat().st_size > 0
+        ]
+        if not pcm_list:
+            self.console.print("[yellow]  当前会话无有效 PCM 文件[/yellow]")
+            Prompt.ask("\n  按回车继续")
+            return
+
+        report = self._analyze_all(pcm_list)
+        self._diagnose(report)
+        Prompt.ask("\n  按回车继续")
+
+    # ══════════════════════════════════════════════
+    # 功能 9：历史会话管理
+    # ══════════════════════════════════════════════
+
+    def history_menu(self):
+        from rich.table import Table
+        from rich import box
+
+        while True:
+            self._section("📋 历史会话管理", "blue")
+
+            sessions = sorted(
+                [d for d in Path(self.sessions_dir).iterdir() if d.is_dir()],
+                reverse=True,
+            )
+
+            if not sessions:
+                self.console.print("[dim]  暂无历史会话[/dim]")
+                Prompt.ask("\n  按回车返回")
+                return
+
+            t = Table(box=box.SIMPLE, show_header=True, header_style="bold blue")
+            t.add_column("序号", width=4)
+            t.add_column("会话目录", width=24)
+            t.add_column("PCM文件数", justify="right", width=10)
+            t.add_column("WAV文件数", justify="right", width=10)
+            t.add_column("总大小", justify="right", width=10)
+
+            for i, s in enumerate(sessions, 1):
+                pcm_cnt = len(list(s.glob("*.pcm")))
+                wav_cnt = len(list(s.glob("*.wav")))
+                total = sum(f.stat().st_size for f in s.iterdir() if f.is_file())
+                t.add_row(
+                    str(i), s.name, str(pcm_cnt), str(wav_cnt), self._fmt_size(total)
+                )
+
+            self.console.print(t)
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row("[yellow]序号[/yellow]", "进入该会话 (重新转换/分析)")
+            menu.add_row("[yellow]d+序号[/yellow]", "删除该会话 (如: d2)")
+            menu.add_row("[yellow]b[/yellow]", "返回")
+            self.console.print(Panel(menu, border_style="dim"))
+
+            c = Prompt.ask("  指令").strip().lower()
+
+            if c == "b":
+                return
+            elif c.startswith("d"):
+                try:
+                    idx = int(c[1:]) - 1
+                    target = sessions[idx]
+                    if (
+                        Prompt.ask(f"  确认删除 {target.name}?", choices=["y", "n"])
+                        == "y"
+                    ):
+                        import shutil
+
+                        shutil.rmtree(str(target))
+                        self.console.print(f"[green]  ✔ 已删除 {target.name}[/green]")
+                except Exception:
+                    self.console.print("[red]  无效指令[/red]")
+                time.sleep(1)
+            else:
+                try:
+                    idx = int(c) - 1
+                    self._session_menu(sessions[idx])
+                except Exception:
+                    self.console.print("[red]  无效序号[/red]")
+                    time.sleep(1)
+
+    def _session_menu(self, session_path: Path):
+        """进入单个历史会话的操作菜单"""
+        while True:
+            self.console.clear()
+            self.console.print(
+                Panel(
+                    f"[bold blue]📂 会话: {session_path.name}[/bold blue]",
+                    border_style="blue",
+                )
+            )
+
+            pcm_files = [
+                str(p) for p in session_path.glob("*.pcm") if p.stat().st_size > 0
+            ]
+            self.console.print(f"  有效 PCM: [green]{len(pcm_files)}[/green] 个\n")
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row("[yellow]1[/yellow]", "重新转换 WAV")
+            menu.add_row("[yellow]2[/yellow]", "音频质量分析")
+            menu.add_row("[yellow]3[/yellow]", "问题诊断")
+            menu.add_row("[yellow]4[/yellow]", "查看报告")
+            menu.add_row("[yellow]b[/yellow]", "返回")
+            self.console.print(Panel(menu, border_style="dim"))
+
+            c = Prompt.ask("  选择").lower()
+            if c == "1":
+                self._batch_convert_to_wav(pcm_files, str(session_path))
+                Prompt.ask("\n  按回车继续")
+            elif c == "2":
+                report = self._analyze_all(pcm_files)
+                self._print_analysis_table(report)
+                Prompt.ask("\n  按回车继续")
+            elif c == "3":
+                report = self._analyze_all(pcm_files)
+                self._diagnose(report)
+                Prompt.ask("\n  按回车继续")
+            elif c == "4":
+                self._show_report(str(session_path))
+                Prompt.ask("\n  按回车继续")
+            elif c == "b":
+                return
+
+    # ══════════════════════════════════════════════
+    # 功能 10：设备音频信息采集
+    # ══════════════════════════════════════════════
+
+    def collect_audio_info(self):
+        self._section("🖥️  设备音频信息采集", "cyan")
+
+        out_dir = self._session_dir or os.getcwd()
+        self._collect_audio_info(out_dir)
+        Prompt.ask("\n  按回车继续")
+
+    def _collect_audio_info(self, out_dir: str):
+        items = [
+            ("dumpsys audio", "audio_dumpsys.txt"),
+            ("dumpsys media.audio_flinger", "audioflinger.txt"),
+            ("cat /proc/asound/cards", "alsa_cards.txt"),
+            ("getprop | grep audio", "audio_props.txt"),
+            ("getprop | grep volume", "volume_props.txt"),
+        ]
+
+        self.console.print("[cyan]  → 采集设备音频信息...[/cyan]")
+        for cmd, fname in items:
+            ok, out = self._shell(cmd, timeout=10)
+            fpath = os.path.join(out_dir, fname)
+            with open(fpath, "w", encoding="utf-8", errors="replace") as f:
+                f.write(f"# CMD: {cmd}\n# TIME: {datetime.now()}\n\n{out}")
+            status = "[green]✔[/green]" if ok else "[yellow]⚠[/yellow]"
+            self.console.print(f"  {status} {fname}")
+
+        self.console.print(f"[green]  ✔ 音频信息已保存到会话目录[/green]")
+
+    # ══════════════════════════════════════════════
+    # 功能 11：参数预设配置
+    # ══════════════════════════════════════════════
+
+    def preset_config_menu(self):
+        from rich.table import Table
+        from rich import box
+
+        while True:
+            self._section("⚙️  参数预设配置", "cyan")
+
+            t = Table(box=box.SIMPLE, show_header=True, header_style="bold cyan")
+            t.add_column("预设名", width=12)
+            t.add_column("采样率", justify="right", width=10)
+            t.add_column("声道", justify="right", width=6)
+            t.add_column("位深", justify="right", width=6)
+            t.add_column("说明", width=20)
+
+            for name, p in self.PRESETS.items():
+                t.add_row(
+                    name,
+                    f"{p['rate']} Hz",
+                    str(p["channels"]),
+                    f"{p['width']*8} bit",
+                    p.get("desc", ""),
+                )
+            self.console.print(t)
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row("[yellow]1[/yellow]", "新增自定义预设")
+            menu.add_row("[yellow]2[/yellow]", "修改 PCM 文件列表")
+            menu.add_row("[yellow]b[/yellow]", "返回")
+            self.console.print(Panel(menu, border_style="dim"))
+
+            c = Prompt.ask("  选择").lower()
+            if c == "1":
+                self._add_preset()
+            elif c == "2":
+                self._edit_pcm_list()
+            elif c == "b":
+                return
+
+    def _add_preset(self):
+        name = Prompt.ask("  预设名称").strip().lower()
+        rate = int(Prompt.ask("  采样率 (Hz)", default="48000"))
+        channels = int(Prompt.ask("  声道数 (1/2)", default="2"))
+        bits = int(Prompt.ask("  位深 (8/16/24)", default="16"))
+        desc = Prompt.ask("  说明", default="").strip()
+
+        self.PRESETS[name] = {
+            "rate": rate,
+            "channels": channels,
+            "width": bits // 8,
+            "desc": desc,
+        }
+        if self.config:
+            pcm_cfg = self.config.get("pcm", {})
+            pcm_cfg.setdefault("presets", {})[name] = self.PRESETS[name]
+            self.config.set("pcm", pcm_cfg)
+        self.console.print(f"[green]  ✔ 预设 '{name}' 已保存[/green]")
+        time.sleep(1)
+
+    def _edit_pcm_list(self):
+        self.console.print(f"  当前列表: [cyan]{', '.join(self.pcm_files)}[/cyan]")
+        new_list = Prompt.ask("  输入新列表 (逗号分隔)").strip()
+        if new_list:
+            self.pcm_files = [x.strip() for x in new_list.split(",") if x.strip()]
+            if self.config:
+                pcm_cfg = self.config.get("pcm", {})
+                pcm_cfg["pcm_files"] = self.pcm_files
+                self.config.set("pcm", pcm_cfg)
+            self.console.print(f"[green]  ✔ 已更新: {self.pcm_files}[/green]")
+        time.sleep(1)
+
+    # ══════════════════════════════════════════════
+    # 内部：批量 PCM → WAV 转换
+    # ══════════════════════════════════════════════
+
+    def _batch_convert_to_wav(self, pcm_files: List[str], out_dir: str) -> List[str]:
+        from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+
+        wav_files = []
+        self.console.print(f"\n[cyan]  → 转换 WAV ({len(pcm_files)} 个文件)...[/cyan]")
+
+        with Progress(
+            SpinnerColumn(),
+            BarColumn(bar_width=30),
+            TextColumn("[cyan]{task.description}"),
+            console=self.console,
+        ) as p:
+            task = p.add_task("转换中", total=len(pcm_files))
+
+            for pcm_path in pcm_files:
+                name = Path(pcm_path).stem
+                preset = self._get_preset(name)
+                wav_out = os.path.join(out_dir, f"{name}.wav")
+
+                p.update(
+                    task, description=f"{name}.pcm → {preset['_preset_name']} 预设"
+                )
+
+                try:
+                    self._pcm_to_wav(
+                        pcm_path,
+                        wav_out,
+                        rate=preset["rate"],
+                        channels=preset["channels"],
+                        width=preset["width"],
+                    )
+                    wav_files.append(wav_out)
+                except Exception as e:
+                    self.console.print(f"  [red]✘ {name}: {e}[/red]")
+
+                p.advance(task)
+
+        return wav_files
+
+    @staticmethod
+    def _pcm_to_wav(pcm_path: str, wav_path: str, rate: int, channels: int, width: int):
+        """纯标准库 PCM → WAV，无第三方依赖"""
+        with open(pcm_path, "rb") as f:
+            data = f.read()
+        if len(data) == 0:
+            raise ValueError("PCM 文件为空")
+        with wave.open(wav_path, "wb") as w:
+            w.setnchannels(channels)
+            w.setsampwidth(width)
+            w.setframerate(rate)
+            w.writeframes(data)
+
+    # ══════════════════════════════════════════════
+    # 内部：音频分析
+    # ══════════════════════════════════════════════
+
+    def _analyze_all(self, pcm_files: List[str]) -> List[Dict]:
+        results = []
+        for path in pcm_files:
+            r = self._analyze_one(path)
+            results.append(r)
+        return results
+
+    def _analyze_one(self, pcm_path: str) -> Dict:
+        name = Path(pcm_path).stem
+        preset = self._get_preset(name)
+        fsize = os.path.getsize(pcm_path)
+
+        base = {
+            "file": name,
+            "path": pcm_path,
+            "size": fsize,
+            "preset": preset["_preset_name"],
+            "rate": preset["rate"],
+            "channels": preset["channels"],
+            "width": preset["width"],
+            "duration": fsize
+            / max(preset["rate"] * preset["channels"] * preset["width"], 1),
+            "has_data": fsize > 0,
+            "silent": True,
+            "rms_l": 0.0,
+            "rms_r": 0.0,
+            "peak_l": 0.0,
+            "peak_r": 0.0,
+            "silence_ratio": 1.0,
+            "error": None,
+        }
+
+        if not _NUMPY or fsize == 0:
+            return base
+
+        try:
+            dtype_map = {1: "uint8", 2: "int16", 3: "int32", 4: "int32"}
+            dtype = getattr(
+                __import__("numpy"), dtype_map.get(preset["width"], "int16")
+            )
+            raw = __import__("numpy").frombuffer(
+                open(pcm_path, "rb").read(), dtype=dtype
+            )
+
+            if preset["channels"] == 2 and len(raw) >= 2:
+                left, right = raw[0::2].astype(float), raw[1::2].astype(float)
+            else:
+                left, right = raw.astype(float), None
+
+            max_val = 2 ** (preset["width"] * 8 - 1)
+            rms_l = float(__import__("numpy").sqrt(__import__("numpy").mean(left**2)))
+            peak_l = float(__import__("numpy").max(__import__("numpy").abs(left)))
+            sil_r = float(
+                __import__("numpy").sum(
+                    __import__("numpy").abs(left) < max_val * self.SILENCE_THRESHOLD
+                )
+                / len(left)
+            )
+
+            base.update(
+                {
+                    "rms_l": rms_l,
+                    "peak_l": peak_l,
+                    "silence_ratio": sil_r,
+                    "silent": sil_r > 0.95,
+                }
+            )
+
+            if right is not None:
+                base["rms_r"] = float(
+                    __import__("numpy").sqrt(__import__("numpy").mean(right**2))
+                )
+                base["peak_r"] = float(
+                    __import__("numpy").max(__import__("numpy").abs(right))
+                )
+
+        except Exception as e:
+            base["error"] = str(e)
+
+        return base
+
+    def _print_analysis_table(self, report: List[Dict]):
+        from rich.table import Table
+        from rich import box
+
+        t = Table(
+            box=box.ROUNDED, show_header=True, header_style="bold cyan", expand=True
+        )
+        t.add_column("文件", width=14)
+        t.add_column("预设", width=8)
+        t.add_column("时长", justify="right", width=8)
+        t.add_column("大小", justify="right", width=9)
+        t.add_column("RMS-L", justify="right", width=9)
+        t.add_column("峰值-L", justify="right", width=9)
+        t.add_column("静音率", justify="right", width=8)
+        t.add_column("状态", width=12)
+
+        for r in report:
+            if not r["has_data"]:
+                t.add_row(
+                    r["file"], "-", "-", "0 B", "-", "-", "-", "[dim]空文件[/dim]"
+                )
+                continue
+
+            status = (
+                "[bold red]⚠ 全静音[/bold red]"
+                if r["silent"]
+                else "[green]✔ 有声音[/green]"
+            )
+            t.add_row(
+                r["file"],
+                r["preset"],
+                f"{r['duration']:.1f}s",
+                self._fmt_size(r["size"]),
+                f"{r['rms_l']:.0f}",
+                f"{r['peak_l']:.0f}",
+                f"{r['silence_ratio']*100:.0f}%",
+                status,
+            )
+
+        self.console.print(t)
+
+    # ══════════════════════════════════════════════
+    # 内部：问题诊断引擎
+    # ══════════════════════════════════════════════
+
+    def _diagnose(self, report: List[Dict]):
+        from rich.panel import Panel
+
+        self.console.print("\n")
+        has_data = [r for r in report if r["has_data"]]
+        all_silent = [r for r in has_data if r["silent"]]
+        has_sound = [r for r in has_data if not r["silent"]]
+        zero_files = [r for r in report if not r["has_data"]]
+
+        diagnoses = []
+
+        # ── 规则1：所有文件都是0字节 ──
+        if len(zero_files) == len(report):
+            diagnoses.append(
+                (
+                    "❌ 所有PCM文件为空",
+                    "录音未启动或权限不足\n"
+                    "建议:\n"
+                    "  1. 确认已执行「开始录音」步骤\n"
+                    "  2. 执行菜单1「工程提权」后重试\n"
+                    "  3. 检查 save_pcm/save_mic 是否推送成功",
+                    "red",
+                )
+            )
+
+        # ── 规则2：有数据但全部静音 ──
+        elif has_data and len(all_silent) == len(has_data):
+            diagnoses.append(
+                (
+                    "⚠️  所有通路均静音（有数据但无声）",
+                    "疑似 AudioFlinger 无有效输出\n"
+                    "建议:\n"
+                    "  1. 检查 dumpsys audio 中音频焦点和活跃流\n"
+                    "  2. 确认测试时车机有实际音频输出\n"
+                    "  3. 检查音量设置是否为0",
+                    "yellow",
+                )
+            )
+
+        # ── 规则3：micref 静音但 media 有声 ──
+        else:
+            micref_r = next((r for r in report if "micref" in r["file"]), None)
+            media_r = next((r for r in report if "media" in r["file"]), None)
+            if micref_r and micref_r["silent"] and media_r and not media_r["silent"]:
+                diagnoses.append(
+                    (
+                        "⚠️  MIC参考信号异常",
+                        "media 有声但 micref 静音\n"
+                        "疑似 MIC 采集链路故障\n"
+                        "建议:\n"
+                        "  1. 检查 MIC 硬件连接\n"
+                        "  2. 检查 ALSA 路由配置\n"
+                        "  3. 检查 audio HAL 中 mic_ref 路由",
+                        "yellow",
+                    )
+                )
+
+            # ── 规则4：特定通路静音 ──
+            for r in all_silent:
+                if r in has_data:
+                    diagnoses.append(
+                        (
+                            f"⚠️  {r['file']} 通路静音",
+                            f"文件有数据 ({self._fmt_size(r['size'])}) 但静音率 {r['silence_ratio']*100:.0f}%\n"
+                            f"疑似该音频通路无输出\n"
+                            f"建议检查 {r['file']} 对应的音频路由配置",
+                            "yellow",
+                        )
+                    )
+
+        # ── 无问题 ──
+        if not diagnoses and has_sound:
+            self.console.print(
+                Panel(
+                    "[bold green]✅ 诊断通过[/bold green]\n"
+                    f"所有 {len(has_sound)} 个有效通路均检测到音频数据",
+                    border_style="green",
+                    title="🩺 诊断结果",
+                )
+            )
+            return
+
+        # 打印诊断结果
+        for title, detail, color in diagnoses:
+            self.console.print(
+                Panel(
+                    f"[bold {color}]{title}[/bold {color}]\n\n{detail}",
+                    border_style=color,
+                    title="🩺 诊断",
+                )
+            )
+
+    # ══════════════════════════════════════════════
+    # 内部：报告
+    # ══════════════════════════════════════════════
+
+    def _save_session_meta(self, session_dir: str, meta: Dict):
+        path = os.path.join(session_dir, "session_meta.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2, ensure_ascii=False, default=str)
+
+    def _save_report(self, session_dir: str, report: List[Dict]):
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(session_dir, f"report_{ts}.json")
+        data = {
+            "timestamp": ts,
+            "session": session_dir,
+            "summary": {
+                "total": len(report),
+                "has_sound": sum(
+                    1 for r in report if not r["silent"] and r["has_data"]
+                ),
+                "silent": sum(1 for r in report if r["silent"] and r["has_data"]),
+                "empty": sum(1 for r in report if not r["has_data"]),
+            },
+            "files": report,
+        }
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False, default=str)
+        self.console.print(f"[dim]  报告已保存: {os.path.basename(path)}[/dim]")
+
+    def _show_report(self, session_dir: str):
+        reports = sorted(Path(session_dir).glob("report_*.json"), reverse=True)
+        if not reports:
+            self.console.print("[yellow]  无报告文件[/yellow]")
+            return
+        with open(str(reports[0]), encoding="utf-8") as f:
+            data = json.load(f)
+        self.console.print_json(json.dumps(data, ensure_ascii=False, default=str))
+
+    # ══════════════════════════════════════════════
+    # 内部工具
+    # ══════════════════════════════════════════════
+
+    @staticmethod
+    def _fmt_size(size: int) -> str:
+        if size < 0:
+            return "?"
+        if size < 1024:
+            return f"{size} B"
+        if size < 1024**2:
+            return f"{size/1024:.1f} KB"
+        return f"{size/1024/1024:.1f} MB"
+
+    # ══════════════════════════════════════════════
+    # 主菜单入口
+    # ══════════════════════════════════════════════
+
+    def run_menu(self):
+        from rich.table import Table
+        from rich.panel import Panel
+        from rich.prompt import Prompt
+        from rich import box
+
+        while True:
+            self.console.clear()
+            self.console.print(
+                Panel(
+                    "[bold cyan]🎵 PCM 音频诊断中心[/bold cyan]\n"
+                    "[dim]车机音频问题提取 / 转换 / 分析 / 诊断一体化工具[/dim]",
+                    border_style="cyan",
+                )
+            )
+
+            # 显示当前会话状态
+            sess_info = (
+                f"[green]{os.path.basename(self._session_dir)}[/green]"
+                if self._session_dir
+                else "[dim]无[/dim]"
+            )
+            rec_info = (
+                "[bold red]🔴 录音中[/bold red]"
+                if self._recording
+                else "[dim]待机[/dim]"
+            )
+            self.console.print(f"  当前会话: {sess_info}   状态: {rec_info}\n")
+
+            menu = Table(
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold cyan",
+                expand=True,
+            )
+            menu.add_column("🎙️ 录音 & 提取", ratio=1)
+            menu.add_column("🔧 分析 & 诊断", ratio=1)
+
+            menu.add_row(
+                "[yellow]1[/yellow]  🔴 开始录音",
+                "[yellow]6[/yellow]  🔍 音频质量分析",
+            )
+            menu.add_row(
+                "[yellow]2[/yellow]  ⏹  停止并提取 PCM",
+                "[yellow]7[/yellow]  📊 实时录音监控",
+            )
+            menu.add_row(
+                "[yellow]3[/yellow]  ⚡ [bold]一键全流程[/bold] [dim](推荐)[/dim]",
+                "[yellow]8[/yellow]  🩺 问题自动诊断",
+            )
+            menu.add_row(
+                "[yellow]4[/yellow]  🔄 提取 + 转换 WAV",
+                "[yellow]9[/yellow]  📋 历史会话管理",
+            )
+            menu.add_row(
+                "[yellow]5[/yellow]  📁 本地 PCM 批量转换",
+                "[yellow]10[/yellow] 🖥️  设备音频信息采集",
+            )
+            menu.add_row(
+                "[bold red]q[/bold red]   返回主菜单",
+                "[yellow]11[/yellow] ⚙️  参数预设配置",
+            )
+            self.console.print(menu)
+
+            c = Prompt.ask("\n[bold cyan]  输入指令[/bold cyan]").strip().lower()
+
+            if c == "1":
+                self.start_recording()
+                Prompt.ask("\n  按回车继续")
+            elif c == "2":
+                self.stop_and_pull()
+                Prompt.ask("\n  按回车继续")
+            elif c == "3":
+                self.full_pipeline()
+            elif c == "4":
+                self.pull_and_convert()
+            elif c == "5":
+                self.local_batch_convert()
+            elif c == "6":
+                self.analyze_menu()
+            elif c == "7":
+                self.realtime_monitor()
+            elif c == "8":
+                self.diagnose_menu()
+            elif c == "9":
+                self.history_menu()
+            elif c == "10":
+                self.collect_audio_info()
+            elif c == "11":
+                self.preset_config_menu()
+            elif c == "q":
+                return
+
+
+# ==========================================
+# 集成说明（3步）
+# ==========================================
+#
+# 1. 把本文件的 PcmAudioCenter 类粘贴到
+#    ivi_toolbox.py 末尾的 CarHouseKeepApp 类之前
+#
+# 2. 在 CarHouseKeepApp.__init__ 末尾添加：
+#    self.pcm_center = PcmAudioCenter(self.driver, self.console, self.config_loader)
+#
+# 3. 在 main_menu 里：
+#    菜单新增一行：
+#    menu_table.add_row(
+#        "[bold yellow]14[/bold yellow] 🎵 [bold cyan]PCM 音频诊断中心[/bold cyan] [dim](Extract/Convert/Analyze)[/dim]",
+#        "[bold red]q[/bold red]   退出系统"
+#    )
+#
+#    响应新增：
+#    elif c == "14":
+#        self.pcm_center.run_menu()
+#
+# 4. 在 ConfigLoader.DEFAULT_CONFIG 新增（可选）：
+#    "pcm": {
+#        "pcm_files": ["media","navi","vr_play","micref","sub_play","avas_play","icall","fm-in","fm-out"],
+#        "presets": {}
+#    }
+# ==========================================
+
+
+# ==========================================
+# [重构] 核心模块: 服务与页面诊断中心 (Service Diagnosis V3.0)
+# 功能：前台Activity嗅探、全景分类服务大盘、靶向强杀、系统Dump
+# ==========================================
+import re
+import time
+import subprocess
+from datetime import datetime
+from typing import List, Dict, Tuple
+
+
+class ServiceDiagnosis:
+    def __init__(self, driver, console):
+        self.driver = driver
+        self.console = console
+
+        # --- 恢复并增强的分类字典 (带来极强的专业视觉效果) ---
+        self.CATEGORY_MAP = {
+            "🔊 音频/媒体": [
+                "audio",
+                "media.audio",
+                "media.player",
+                "media.camera",
+                "resource_manager",
+                "audioserver",
+            ],
+            "🖥️ 显示/窗口": [
+                "display",
+                "surfaceflinger",
+                "window",
+                "gfxinfo",
+                "hardware.renderer",
+            ],
+            "⚡ 电源/电池": ["power", "battery", "thermal", "devicestorage"],
+            "🌐 网络/连接": [
+                "connectivity",
+                "wifi",
+                "bluetooth",
+                "netpolicy",
+                "networkstats",
+            ],
+            "📱 应用/系统": [
+                "activity",
+                "package",
+                "processstats",
+                "job_scheduler",
+                "usagestats",
+                "alarm",
+            ],
+            "🚗 车机/IVI": [
+                "car_service",
+                "vehicle",
+                "car_audio",
+                "can",
+                "adayo",
+                "nforetek",
+                "bt.customer",
+            ],
+            "📡 传感器/定位": ["sensorservice", "location", "gps", "gnss"],
+            "📝 存储/输入": ["input", "diskstats", "storage", "clipboard", "mount"],
+        }
+
+        # --- 底层守护进程映射表 (用于精准提取 PID) ---
+        self.NATIVE_DAEMONS = {
+            "audio": "audioserver",
+            "media.audio_flinger": "audioserver",
+            "SurfaceFlinger": "surfaceflinger",
+            "media.camera": "cameraserver",
+            "media.player": "mediaserver",
+            "drm.drmManager": "drmserver",
+            "bluetooth_manager": "com.android.bluetooth",
+            "car_service": "system_server",
+            "activity": "system_server",
+            "window": "system_server",
+            "package": "system_server",
+            "wifi": "system_server",
+            "display": "system_server",
+        }
+
+    # ══════════════════════════════════════════════
+    # 🌟 核心功能 1: 查看当前前台 Activity (照妖镜)
+    # ══════════════════════════════════════════════
+    def _show_current_activity(self):
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.prompt import Prompt
+
+        self.console.clear()
+        info_pkg, info_act = "Unknown", "Unknown"
+        raw_output = ""
+        success = False
+
+        with self.console.status(
+            "[bold cyan]正在照妖镜扫描前台页面 (Current Focus)...[/bold cyan]"
+        ):
+            s, out = self.driver.run("shell dumpsys window displays")
+            for line in out.splitlines():
+                if "mCurrentFocus" in line:
+                    raw_output = line.strip()
+                    success = True
+                    break
+
+            if not success or "null" in raw_output:
+                s, out = self.driver.run("shell dumpsys activity activities")
+                for line in out.splitlines():
+                    if "mResumedActivity" in line:
+                        raw_output = line.strip()
+                        success = True
+                        break
+
+        match = re.search(r"u0\s+([a-zA-Z0-9._]+)/([a-zA-Z0-9._]+)", raw_output)
+
+        if match:
+            info_pkg = match.group(1)
+            info_act = match.group(2)
+            if info_act.startswith("."):
+                info_act = info_pkg + info_act
+
+            grid = Table.grid(expand=True, padding=(0, 2))
+            grid.add_column(style="cyan", justify="right")
+            grid.add_column(style="bold white")
+            grid.add_row(
+                "📦 目标包名 (Package):", f"[bold green]{info_pkg}[/bold green]"
+            )
+            grid.add_row("📄 顶层页面 (Activity):", info_act)
+            grid.add_row("🔍 原始数据 (Raw):", f"[dim]{raw_output}[/dim]")
+
+            self.console.print(
+                Panel(
+                    grid,
+                    title="[bold magenta]📍 当前屏幕前台应用[/bold magenta]",
+                    border_style="magenta",
+                )
+            )
+
+            if (
+                Prompt.ask(
+                    "\n是否一键强行停止该应用？(y/n)", choices=["y", "n"], default="n"
+                )
+                == "y"
+            ):
+                self.driver.run(f"shell am force-stop {info_pkg}")
+                self.console.print(f"[green]✔ 已发送指令强杀: {info_pkg}[/green]")
+        else:
+            self.console.print(
+                Panel(
+                    f"[red]❌ 未能解析出 Activity。[/red]\n[dim]原始返回:\n{raw_output if raw_output else '无数据'}[/dim]\n[yellow]可能原因：屏幕处于锁屏、或者当前是悬浮窗。[/yellow]",
+                    border_style="red",
+                )
+            )
+
+        Prompt.ask("\n按回车返回...")
+
+    # ══════════════════════════════════════════════
+    # 🌟 新增功能: 模糊搜索并一键启动应用
+    # ══════════════════════════════════════════════
+    def _search_and_launch_activity(self):
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.prompt import Prompt
+        from rich import box
+        import time
+
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold cyan]🚀 搜索并一键启动应用[/bold cyan]\n[dim]通过包名关键词搜索，一键拉起目标应用[/dim]",
+                border_style="cyan",
+            )
+        )
+
+        # 1. 获取设备所有包名
+        with self.console.status("[dim]正在拉取设备应用列表...[/dim]"):
+            s, out = self.driver.run("shell pm list packages")
+            all_pkgs = [
+                line.split(":")[-1].strip()
+                for line in out.splitlines()
+                if "package:" in line
+            ]
+
+        # 2. 搜索交互
+        keyword = (
+            Prompt.ask(
+                "🔍 请输入包名关键词 (如: config, map, launcher) [dim]输入 0 返回[/dim]"
+            )
+            .strip()
+            .lower()
+        )
+        if keyword == "0" or not keyword:
+            return
+
+        # 3. 过滤并匹配
+        matched_pkgs = [p for p in all_pkgs if keyword in p.lower()]
+
+        if not matched_pkgs:
+            self.console.print(
+                Panel(
+                    f"[bold red]❌ 未找到包含 '{keyword}' 的应用[/bold red]",
+                    border_style="red",
+                )
+            )
+            Prompt.ask("\n按回车键返回...")
+            return
+
+        # 4. 渲染列表 (复用你喜欢的UI风格)
+        self.console.clear()
+        t = Table(
+            title=f"搜索结果: '{keyword}' (共 {len(matched_pkgs)} 个)",
+            box=box.ROUNDED,
+            expand=True,
+        )
+        t.add_column("ID", justify="center", style="cyan", width=6)
+        t.add_column("包名 (Package Name)", style="white")
+
+        for i, pkg in enumerate(matched_pkgs):
+            t.add_row(str(i + 1), pkg)
+
+        self.console.print(t)
+        self.console.print(
+            "[dim]提示: 输入 [cyan]ID[/cyan] 即可启动该应用，输入 [cyan]0[/cyan] 返回[/dim]"
+        )
+
+        # 5. 用户选择 ID
+        raw = Prompt.ask("\n[bold yellow]请输入 ID[/bold yellow]")
+        if raw in ["0", "b", ""]:
+            return
+
+        try:
+            idx = int(raw) - 1
+            if 0 <= idx < len(matched_pkgs):
+                target_pkg = matched_pkgs[idx]
+                self._execute_launch(target_pkg)
+            else:
+                self.console.print("[red]ID 超出范围[/red]")
+                time.sleep(1)
+        except ValueError:
+            self.console.print("[red]输入无效[/red]")
+            time.sleep(1)
+
+    def _execute_launch(self, pkg_name: str):
+        """执行底层启动逻辑"""
+        from rich.prompt import Prompt
+        from rich.panel import Panel
+
+        self.console.print(
+            f"\n[cyan]正在尝试唤醒并启动: [bold white]{pkg_name}[/bold white]...[/cyan]"
+        )
+
+        # 防呆设计：先点亮屏幕
+        self.driver.run("shell input keyevent 224")
+
+        # 【核心黑科技】：只知道包名的情况下，使用 monkey 唤起默认 Launcher Activity 是最稳妥的
+        cmd = f"shell monkey -p {pkg_name} -c android.intent.category.LAUNCHER 1"
+        s, out = self.driver.run(cmd)
+
+        if s and "Events injected" in out:
+            self.console.print(
+                "[bold green]✅ 启动指令已成功发送！请观察车机屏幕。[/bold green]"
+            )
+        else:
+            self.console.print(
+                Panel(
+                    f"[bold red]❌ 启动失败。[/bold red]\n[dim]可能原因：该应用没有供用户点击的默认界面（如纯后台服务、系统插件）。\n底层反馈:\n{out}[/dim]",
+                    border_style="red",
+                )
+            )
+
+        Prompt.ask("\n按回车继续...")
+
+    # ══════════════════════════════════════════════
+    # 🌟 核心功能 2: 扫描全景服务大盘与靶向操作 (重构版)
+    # ══════════════════════════════════════════════
+    def _scan_and_target_service(self):
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.prompt import Prompt
+        from rich import box
+
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold cyan]🔍 服务诊断中心 (Service Diagnosis)[/bold cyan]\n[dim]智能分类 / 进程树追踪 / 靶向诊断[/dim]",
+                border_style="cyan",
+            )
+        )
+
+        keyword = (
+            Prompt.ask("🔎 输入服务名或包名 (留空将为您展示分类大盘)").strip().lower()
+        )
+
+        with self.console.status(
+            "[yellow]正在扫描设备服务栈并提取底层进程信息...[/yellow]"
+        ):
+            s, svc_out = self.driver.run("shell service list")
+            s, ps_out = self.driver.run("shell ps -A")
+
+            # 构建进程字典 { "audioserver": "642" }
+            ps_map = {}
+            for line in ps_out.splitlines():
+                parts = line.split()
+                if len(parts) >= 8:
+                    ps_map[parts[-1]] = parts[1]
+
+            services = []
+            for line in svc_out.splitlines():
+                match = re.search(r"^\s*\d+\s+([^:]+):", line)
+                if match:
+                    svc_name = match.group(1).strip()
+                    if keyword and keyword not in svc_name.lower():
+                        continue
+
+                    # --- 恢复智能分类逻辑 ---
+                    category = "📦 通用服务"
+                    for cat, kws in self.CATEGORY_MAP.items():
+                        if any(k in svc_name.lower() for k in kws):
+                            category = cat
+                            break
+
+                    # 匹配 PID
+                    proc_name = self.NATIVE_DAEMONS.get(svc_name, "Unknown/App")
+                    pid = ps_map.get(proc_name, "-")
+
+                    services.append(
+                        {
+                            "name": svc_name,
+                            "category": category,
+                            "proc": proc_name,
+                            "pid": pid,
+                        }
+                    )
+
+            # --- 核心优化：如果不带关键词，过滤掉冗杂的"通用服务"，只展示专业分类 ---
+            if not keyword:
+                services = [s for s in services if s["category"] != "📦 通用服务"]
+                # 按照 CATEGORY_MAP 的顺序对服务进行优美排序
+                cat_order = list(self.CATEGORY_MAP.keys())
+                services.sort(
+                    key=lambda x: (
+                        cat_order.index(x["category"])
+                        if x["category"] in cat_order
+                        else 99
+                    )
+                )
+
+        if not services:
+            self.console.print("[yellow]⚠ 未找到匹配的服务。[/yellow]")
+            Prompt.ask("\n按回车返回...")
+            return
+
+        # --- 渲染带有专业分类的绝美表格 ---
+        t = Table(
+            title=f"📋 服务全景图 (展示核心分类共 {len(services)} 个)",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+            expand=True,
+        )
+        t.add_column("ID", justify="center", style="dim", width=4)
+        t.add_column("📂 业务分类", justify="center", width=14)
+        t.add_column("服务名称 (Service)", style="bold white")
+        t.add_column("所属进程 (Process)", style="cyan")
+        t.add_column("PID", justify="right", style="green")
+
+        cat_colors = {
+            "🔊 音频/媒体": "magenta",
+            "🖥️ 显示/窗口": "blue",
+            "⚡ 电源/电池": "yellow",
+            "🌐 网络/连接": "green",
+            "📱 应用/系统": "cyan",
+            "🚗 车机/IVI": "bold red",
+            "📡 传感器/定位": "white",
+            "📝 存储/输入": "dim",
+        }
+
+        for i, svc in enumerate(services):
+            color = cat_colors.get(svc["category"], "dim")
+            t.add_row(
+                str(i + 1),
+                f"[{color}]{svc['category']}[/]",
+                svc["name"],
+                svc["proc"],
+                svc["pid"],
+            )
+
+        self.console.print(t)
+
+        # --- 选择靶向目标 ---
+        sel = Prompt.ask(
+            "\n👉 输入目标 ID 进行深度操作 [dim](输入 0 返回)[/dim]", default="0"
+        )
+        if not sel.isdigit() or sel == "0":
+            return
+
+        idx = int(sel) - 1
+        if 0 <= idx < len(services):
+            self._service_action_menu(services[idx])
+
+    def _service_action_menu(self, svc: dict):
+        """针对特定服务的【靶向操作菜单】"""
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.prompt import Prompt
+
+        while True:
+            self.console.clear()
+            self.console.print(
+                Panel(
+                    f"[bold cyan]🎯 靶向控制台: {svc['name']}[/bold cyan]\n[dim]分类: {svc['category']} | 进程: {svc['proc']} | PID: {svc['pid']}[/dim]",
+                    border_style="cyan",
+                )
+            )
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row(
+                "[yellow]1[/yellow]", "🩺 [bold]Dump 服务详情状态[/bold] (dumpsys)"
+            )
+            menu.add_row(
+                "[yellow]2[/yellow]",
+                "🔪 [bold red]暴力强杀/重启进程[/bold red] (kill -9)",
+            )
+            menu.add_row(
+                "[yellow]3[/yellow]", "📝 [bold]提取专有日志[/bold] (Logcat by PID)"
+            )
+            menu.add_row("[yellow]b[/yellow]", "返回上一级")
+            self.console.print(Panel(menu, border_style="dim"))
+
+            c = Prompt.ask("选择操作").lower()
+            if c == "1":
+                with self.console.status(
+                    f"[cyan]正在 Dump {svc['name']} 数据...[/cyan]"
+                ):
+                    s, out = self.driver.run(f"shell dumpsys {svc['name']}")
+                self.console.print(
+                    Panel(
+                        out[:3000] + ("\n...[已截断]" if len(out) > 3000 else ""),
+                        title=f"Dumpsys: {svc['name']}",
+                        border_style="green",
+                    )
+                )
+                Prompt.ask("\n按回车继续...")
+
+            elif c == "2":
+                if svc["pid"] == "-":
+                    self.console.print(
+                        "[red]❌ 未知 PID，无法强杀。尝试通过应用管理器卸载或重启设备。[/red]"
+                    )
+                else:
+                    if (
+                        Prompt.ask(
+                            f"警告：强杀底层的 {svc['proc']} 可能导致系统软重启。确认执行？(y/n)",
+                            choices=["y", "n"],
+                            default="n",
+                        )
+                        == "y"
+                    ):
+                        self.driver.run(f"shell kill -9 {svc['pid']}")
+                        self.console.print(
+                            f"[green]✔ SIGKILL 已发送至 PID {svc['pid']}[/green]"
+                        )
+                Prompt.ask("\n按回车继续...")
+
+            elif c == "3":
+                if svc["pid"] == "-":
+                    self.console.print("[red]❌ 未知 PID，无法精准抓取。[/red]")
+                else:
+                    with self.console.status("[cyan]正在过滤日志...[/cyan]"):
+                        s, out = self.driver.run(
+                            f"shell logcat -d --pid={svc['pid']} -t 200"
+                        )
+                    self.console.print(
+                        Panel(
+                            out[-2000:],
+                            title=f"Recent Logs for PID {svc['pid']}",
+                            border_style="cyan",
+                        )
+                    )
+                Prompt.ask("\n按回车继续...")
+
+            elif c == "b":
+                break
+
+    # ══════════════════════════════════════════════
+    # 主菜单
+    # ══════════════════════════════════════════════
+    def run_menu(self):
+        from rich.table import Table
+        from rich.panel import Panel
+        from rich.prompt import Prompt
+        from rich import box
+
+        while True:
+            self.console.clear()
+            self.console.print(
+                Panel(
+                    "[bold blue]🩺 服务与页面诊断中心 (Service Diag)[/bold blue]\n[dim]快速定位前台应用，排查底层服务崩溃死锁[/dim]",
+                    border_style="blue",
+                )
+            )
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row(
+                "[bold yellow]1[/bold yellow]",
+                "📱 [bold cyan]照妖镜：查看当前屏幕前台 Activity[/bold cyan] [dim](Current Focus)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]2[/bold yellow]",
+                "📋 [bold]扫描服务大盘与靶向操作[/bold] [dim](List & Action)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]3[/bold yellow]",
+                "🔊 [bold magenta]音频专科[/bold magenta]: 导出音频焦点栈 [dim](排查播报没声音)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]4[/bold yellow]",
+                "🖥️  [bold magenta]显示专科[/bold magenta]: 导出窗口层级树 [dim](排查神秘透明弹窗)[/dim]",
+            )
+            # 👇 --- 加入这一行 --- 👇
+            menu.add_row(
+                "[bold yellow]5[/bold yellow]",
+                "🚀 [bold green]启动应用[/bold green]: 搜索包名并一键启动 [dim](App Launcher)[/dim]",
+            )
+            menu.add_row("[bold yellow]b[/bold yellow]", "返回主菜单")
+            self.console.print(
+                Panel(menu, title="[bold]诊断模式[/bold]", border_style="cyan")
+            )
+
+            c = Prompt.ask("\n[bold cyan]请输入指令[/bold cyan]").lower().strip()
+
+            if c == "1":
+                self._show_current_activity()
+            elif c == "2":
+                self._scan_and_target_service()
+            elif c == "3":
+                with self.console.status("Dump Audio Focus..."):
+                    s, out = self.driver.run(
+                        "shell \"dumpsys audio | grep -A 20 'Audio Focus'\""
+                    )
+                self.console.print(
+                    Panel(
+                        out if out.strip() else "[无焦点数据]",
+                        title="Audio Focus Stack",
+                        border_style="magenta",
+                    )
+                )
+                Prompt.ask("\n按回车继续...")
+            elif c == "4":
+                with self.console.status("Dump Window Displays..."):
+                    s, out = self.driver.run('shell "dumpsys window displays"')
+                filtered = [
+                    l
+                    for l in out.splitlines()
+                    if "Window{" in l or "mCurrentFocus" in l
+                ]
+                self.console.print(
+                    Panel(
+                        "\n".join(filtered),
+                        title="Window Hierarchy",
+                        border_style="magenta",
+                    )
+                )
+                Prompt.ask("\n按回车继续...")
+
+            # 👇 --- 加入这一行 --- 👇
+            elif c == "5":
+                self._search_and_launch_activity()
+            elif c == "b":
+                return
+
+
+# ==========================================
+# [新增] 核心模块: 蓝牙高级诊断中心 (BluetoothDiagCenter)
+# 功能：HCI Snoop 嗅探、日志自动化拉取、底层运维
+# ==========================================
+
+import os
+import time
+import subprocess
+from datetime import datetime
+import platform
+
+
+class BluetoothDiagCenter:
+    """车载蓝牙高级诊断中心"""
+
+    # 蓝牙日志默认路径（AOSP标准）
+    BT_LOG_DIR = "/data/misc/bluetooth/logs"
+    BT_CONF_DIR = "/data/misc/bluedroid"
+
+    def __init__(self, driver, console):
+        self.driver = driver
+        self.console = console
+        self.save_dir = os.path.join(os.getcwd(), "bluetooth_logs")
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
+
+    # ══════════════════════════════════════════════
+    # 底层状态侦测方法
+    # ══════════════════════════════════════════════
+    def _check_snoop_status(self) -> bool:
+        """检查底层 Snoop 是否处于开启状态"""
+        s, out = self.driver.run("shell getprop persist.bluetooth.btsnoopenable")
+        return "true" in out.lower()
+
+    def _check_bt_power_status(self) -> str:
+        """检查蓝牙当前的电源状态"""
+        # 尝试读取全局设置，返回 1 表示开启，0 表示关闭
+        s, out = self.driver.run("shell settings get global bluetooth_on")
+        if "1" in out:
+            return "[bold green]已开启 (ON)[/bold green]"
+        elif "0" in out:
+            return "[bold dim]已关闭 (OFF)[/bold dim]"
+        else:
+            return "[yellow]未知 (Unknown)[/yellow]"
+
+    def _ensure_root(self) -> bool:
+        """确保具有 Root 和 Remount 权限"""
+        s, uid = self.driver.run("shell id")
+        if "uid=0" not in uid:
+            self.console.print("[yellow]正在获取 Root 权限...[/yellow]")
+            self.driver.run("root")
+            time.sleep(2)
+            self.driver.run("wait-for-device")
+            s, uid = self.driver.run("shell id")
+            if "uid=0" not in uid:
+                self.console.print(
+                    "[red]❌ 无法获取 Root 权限，蓝牙底层配置修改失败。[/red]"
+                )
+                return False
+        self.driver.run("remount")
+        return True
+
+    def _restart_bt_service(self):
+        """硬重启蓝牙服务"""
+        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[cyan]{task.description}"),
+            BarColumn(bar_width=30),
+            console=self.console,
+        ) as progress:
+            task = progress.add_task("正在关闭蓝牙服务...", total=100)
+            self.driver.run("shell svc bluetooth disable")
+            progress.update(task, advance=50, description="正在重置底层状态...")
+            time.sleep(2.5)  # 给底层释放资源的时间
+
+            progress.update(task, description="正在拉起蓝牙服务...")
+            self.driver.run("shell svc bluetooth enable")
+            time.sleep(1.5)
+            progress.update(
+                task, advance=50, description="[green]蓝牙服务已重启[/green]"
+            )
+
+    # ══════════════════════════════════════════════
+    # 核心功能实现
+    # ══════════════════════════════════════════════
+    def enable_snoop(self):
+        """一键开启 HCI Snoop 抓包"""
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold cyan]🔴 正在配置蓝牙底层嗅探协议...[/bold cyan]",
+                border_style="cyan",
+            )
+        )
+
+        if not self._ensure_root():
+            Prompt.ask("\n按回车返回...")
+            return
+
+        commands = [
+            "shell setprop persist.bluetooth.btsnoopenable true",
+            "shell setprop persist.bluetooth.btsnooplogmode full",
+            f"shell setprop persist.bluetooth.btsnooppath {self.BT_LOG_DIR}/btsnoop_hci.log",
+            "shell sync",
+        ]
+
+        with self.console.status("[yellow]正在写入底层抓包策略...[/yellow]"):
+            for cmd in commands:
+                self.driver.run(cmd)
+
+        self._restart_bt_service()
+
+        self.console.print("\n[bold green]✅ 蓝牙 Snoop 抓包已成功开启！[/bold green]")
+        self.console.print(
+            "[dim]提示：请在手机端断开并重新连接车机蓝牙，并开始复现问题。\n"
+            "复现完成后，请使用本工具的「提取日志」功能拉取数据。[/dim]"
+        )
+        Prompt.ask("\n按回车返回...")
+
+    def disable_snoop(self):
+        """一键关闭 HCI Snoop 抓包"""
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold yellow]⏹ 正在关闭蓝牙底层嗅探...[/bold yellow]",
+                border_style="yellow",
+            )
+        )
+
+        if not self._ensure_root():
+            Prompt.ask("\n按回车返回...")
+            return
+
+        with self.console.status("[yellow]正在清除抓包策略...[/yellow]"):
+            self.driver.run("shell setprop persist.bluetooth.btsnoopenable false")
+            self.driver.run("shell sync")
+
+        self._restart_bt_service()
+
+        self.console.print("\n[bold green]✅ 蓝牙 Snoop 抓包已关闭。[/bold green]")
+        self.console.print(
+            "[dim]提示：关闭抓包可以防止车机 /data 分区因日志过大而被撑爆。[/dim]"
+        )
+        Prompt.ask("\n按回车返回...")
+
+    def pull_logs(self):
+        """提取并分析日志"""
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold cyan]📥 正在提取蓝牙日志 (HCI Snoop)[/bold cyan]",
+                border_style="cyan",
+            )
+        )
+
+        if not self._ensure_root():
+            Prompt.ask("\n按回车返回...")
+            return
+
+        # 创建时间戳文件夹
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        local_dir = os.path.join(self.save_dir, f"BT_Log_{ts}")
+        os.makedirs(local_dir, exist_ok=True)
+
+        with self.console.status("[cyan]正在通过 ADB Pull 拉取数据...[/cyan]"):
+            success, out = self.driver.run(f'pull "{self.BT_LOG_DIR}" "{local_dir}"')
+
+        # 检查是否真的拉到了文件
+        pulled_files = []
+        for root_dir, dirs, files in os.walk(local_dir):
+            for file in files:
+                pulled_files.append(os.path.join(root_dir, file))
+
+        if not success or len(pulled_files) == 0:
+            self.console.print(f"[red]❌ 拉取失败或目录为空。输出: {out}[/red]")
+            Prompt.ask("\n按回车返回...")
+            return
+
+        self.console.print(
+            f"[bold green]✅ 成功提取 {len(pulled_files)} 个文件！[/bold green]"
+        )
+        self.console.print(f"[dim]保存路径: {local_dir}[/dim]\n")
+
+        # 是否清空车机日志
+        if (
+            Prompt.ask(
+                "是否清空车机端的蓝牙日志以释放空间？", choices=["y", "n"], default="y"
+            )
+            == "y"
+        ):
+            self.driver.run(f"shell rm -rf {self.BT_LOG_DIR}/*")
+            self.console.print("[green]✔ 车机端蓝牙日志已清空[/green]")
+
+        # Wireshark 联动逻辑 (仅限 Windows)
+        if platform.system() == "Windows":
+            ws_path = r"C:\Program Files\Wireshark\Wireshark.exe"
+            hci_log_path = None
+
+            # 寻找后缀为 .log 或 btsnoop_hci 的文件
+            for f in pulled_files:
+                if "btsnoop" in f.lower() or f.endswith(".log"):
+                    hci_log_path = f
+                    break
+
+            if hci_log_path and os.path.exists(ws_path):
+                if (
+                    Prompt.ask(
+                        f"\n[cyan]检测到 Wireshark，是否立即打开协议栈日志分析？[/cyan]",
+                        choices=["y", "n"],
+                        default="y",
+                    )
+                    == "y"
+                ):
+                    self.console.print("[dim]正在启动 Wireshark...[/dim]")
+                    # 使用 subprocess 不阻塞主进程
+                    subprocess.Popen([ws_path, hci_log_path])
+            else:
+                os.startfile(local_dir)  # 没有 Wireshark 则打开文件夹
+
+        Prompt.ask("\n按回车返回...")
+
+    def maintenance_tools(self):
+        """底层运维工具箱"""
+        while True:
+            self.console.clear()
+            self.console.print(
+                Panel(
+                    "[bold magenta]🛠 蓝牙底层运维工具箱[/bold magenta]",
+                    border_style="magenta",
+                )
+            )
+
+            from rich.table import Table
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row(
+                "[yellow]1[/yellow]",
+                "🔄 [bold]硬重启蓝牙服务[/bold] [dim](Kill & Restart)[/dim]",
+            )
+            menu.add_row(
+                "[yellow]2[/yellow]",
+                "🗑️  [bold red]彻底清除所有蓝牙配对/缓存[/bold red] [dim](解决连不上/列表错乱)[/dim]",
+            )
+            menu.add_row("[yellow]b[/yellow]", "返回")
+            self.console.print(Panel(menu, border_style="dim"))
+
+            c = Prompt.ask("选择指令").lower()
+            if c == "1":
+                if self._ensure_root():
+                    self._restart_bt_service()
+                Prompt.ask("\n按回车继续...")
+
+            elif c == "2":
+                self.console.print(
+                    "\n[bold red]⚠️ 警告: 此操作将删除车机上所有的蓝牙配对记录和历史缓存！[/bold red]"
+                )
+                if Prompt.ask("是否确认执行？", choices=["y", "n"], default="n") == "y":
+                    if self._ensure_root():
+                        with self.console.status("[red]正在抹除底层配置目录...[/red]"):
+                            self.driver.run(f"shell rm -rf {self.BT_CONF_DIR}/*")
+                            self.driver.run("shell sync")
+                        self.console.print(
+                            "[green]✔ 配置已抹除，正在重启服务使之生效...[/green]"
+                        )
+                        self._restart_bt_service()
+                        self.console.print(
+                            "[bold green]✅ 蓝牙环境已重置为出厂状态！[/bold green]"
+                        )
+                Prompt.ask("\n按回车继续...")
+
+            elif c == "b":
+                return
+
+    # ══════════════════════════════════════════════
+    # 主菜单渲染
+    # ══════════════════════════════════════════════
+    def run_menu(self):
+        from rich.table import Table
+        from rich.panel import Panel
+        from rich import box
+
+        while True:
+            self.console.clear()
+            self.console.print(
+                Panel(
+                    "[bold blue]📶 车载蓝牙诊断中心 (HCI Diag)[/bold blue]\n[dim]底层的通讯截获与疑难杂症分析[/dim]",
+                    border_style="blue",
+                )
+            )
+
+            # --- 实时侦测状态看板 ---
+            with self.console.status("[dim]正在侦测蓝牙底层状态...[/dim]"):
+                is_snoop_on = self._check_snoop_status()
+                bt_power = self._check_bt_power_status()
+
+            snoop_text = (
+                "[bold white on red] 🔴 嗅探抓包运行中 [/bold white on red]"
+                if is_snoop_on
+                else "[bold dim] ○ 嗅探已关闭 [/bold dim]"
+            )
+
+            dash_table = Table(box=box.ROUNDED, expand=True, padding=(0, 2))
+            dash_table.add_column("检测项", style="cyan", justify="right", ratio=1)
+            dash_table.add_column("当前状态", justify="left", ratio=2)
+            dash_table.add_row("蓝牙系统状态:", bt_power)
+            dash_table.add_row("HCI Snoop 状态:", snoop_text)
+            self.console.print(
+                Panel(
+                    dash_table,
+                    title="[bold green]📡 实时底层状态[/bold green]",
+                    border_style="green",
+                )
+            )
+
+            # --- 操作菜单 ---
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row(
+                "[bold yellow]1[/bold yellow]",
+                "🔴 [bold]开启 HCI Snoop 抓包[/bold] [dim](附带服务硬重启)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]2[/bold yellow]",
+                "⏹  [bold]关闭 HCI Snoop 抓包[/bold] [dim](恢复正常模式)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]3[/bold yellow]",
+                "📥 [bold cyan]提取并分析蓝牙日志[/bold cyan] [dim](Pull & Wireshark 联动)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]4[/bold yellow]",
+                "🛠  [bold magenta]蓝牙底层运维工具箱[/bold magenta] [dim](清缓存/修配对/重启服务)[/dim]",
+            )
+            menu.add_row("[bold yellow]b[/bold yellow]", "返回主菜单")
+            self.console.print(
+                Panel(menu, title="[bold]功能选择[/bold]", border_style="blue")
+            )
+
+            c = Prompt.ask("\n[bold cyan]请输入指令[/bold cyan]").lower().strip()
+
+            if c == "1":
+                self.enable_snoop()
+            elif c == "2":
+                self.disable_snoop()
+            elif c == "3":
+                self.pull_logs()
+            elif c == "4":
+                self.maintenance_tools()
+            elif c == "b":
+                return
+
+
+# ==========================================
+# [新增] 核心模块: 车机配置字与 ADAS 调试中心 (VehicleConfigCenter)
+# ==========================================
+
+import os
+import time
+import re
+import subprocess
+from datetime import datetime
+
+
+class VehicleConfigCenter:
+    """车机配置字与 ADAS 调试中心"""
+
+    APP_PKG = "com.adayo.configurationword"
+    APP_ACTIVITY = "com.adayo.configurationword/.MainActivity"
+
+    def __init__(self, driver, console):
+        self.driver = driver
+        self.console = console
+
+    # ══════════════════════════════════════════════
+    # 基础状态检测 (已修复管道符断裂和卸载/冻结检测 Bug)
+    # ══════════════════════════════════════════════
+    def _is_app_installed(self) -> bool:
+        """检查应用是否已安装 (增强版)"""
+        # 放弃使用 | grep，直接全量拉取，避免 Windows 命令管道截断
+        # 使用 -u 参数，这样即使 App 被 Disable (冻结) 也能扫描出来
+        s, out = self.driver.run("shell pm list packages -u")
+        if not s or not out:
+            return False
+
+        # 在 Python 内存中进行精确匹配
+        for line in out.splitlines():
+            if self.APP_PKG in line:
+                return True
+        return False
+
+    def _is_app_running(self) -> bool:
+        """检查应用是否在顶层运行"""
+        # 使用 dumpsys activity top，兼容性极强，不需要管道符
+        s, out = self.driver.run("shell dumpsys activity top")
+        if not s or not out:
+            return False
+        # 如果能在顶层 Activity 的输出中找到包名，说明在前台
+        return self.APP_PKG in out
+
+    def _ensure_root(self) -> bool:
+        """确保具有 Root 权限以便读取 /data/data"""
+        s, uid = self.driver.run("shell id")
+        if "uid=0" not in uid:
+            self.driver.run("root")
+            time.sleep(1.5)
+            s, uid = self.driver.run("shell id")
+        return "uid=0" in uid
+
+    # ══════════════════════════════════════════════
+    # 功能 1: 🚀 一键启/停配置字界面
+    # ══════════════════════════════════════════════
+    def action_toggle_app(self):
+        from rich.panel import Panel
+        from rich.prompt import Prompt
+
+        self.console.print("\n[cyan]正在检测应用状态...[/cyan]")
+
+        if not self._is_app_installed():
+            self.console.print(
+                Panel(
+                    f"[bold red]❌ 未检测到配置字应用！[/bold red]\n包名: {self.APP_PKG}\n[dim]请确认该应用是否真的被编译进当前车机的固件中。[/dim]",
+                    border_style="red",
+                )
+            )
+            # 暴力兜底：询问用户是否强制启动
+            if (
+                Prompt.ask(
+                    "未检测到包名。是否仍要强行尝试启动？",
+                    choices=["y", "n"],
+                    default="n",
+                )
+                == "n"
+            ):
+                Prompt.ask("\n按回车返回...")
+                return
+
+        is_running = self._is_app_running()
+
+        if is_running:
+            self.console.print(
+                "[yellow]当前状态: 运行于前台。正在执行关闭 (Force Stop)...[/yellow]"
+            )
+            self.driver.run(f"shell am force-stop {self.APP_PKG}")
+            self.console.print("[bold green]✅ 应用已强行停止。[/bold green]")
+        else:
+            self.console.print(
+                "[yellow]当前状态: 未运行/处于后台。正在执行启动 (Launch)...[/yellow]"
+            )
+            # 唤醒屏幕并解锁 (防呆)
+            self.driver.run("shell input keyevent 224")  # 点亮屏幕
+            time.sleep(0.5)
+
+            # 使用 am start -n 强拉 Activity，增加 -W 等待启动完成，方便看报错
+            s, out = self.driver.run(f"shell am start -W -n {self.APP_ACTIVITY}")
+
+            if "Error" in out or "Exception" in out or "does not exist" in out:
+                self.console.print(
+                    f"[bold red]❌ 启动失败。底层输出反馈：[/bold red]\n[dim]{out}[/dim]"
+                )
+            else:
+                self.console.print(
+                    "[bold green]✅ 启动指令已下发，请查看车机屏幕。[/bold green]"
+                )
+
+        Prompt.ask("\n按回车返回...")
+
+    # ══════════════════════════════════════════════
+    # 功能 2: 📡 尝试导出当前配置状态 (Dump Prefs)
+    # ══════════════════════════════════════════════
+    def action_dump_prefs(self):
+        from rich.table import Table
+        from rich.panel import Panel
+        from rich import box
+        from rich.prompt import Prompt
+
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold cyan]📡 正在跨权读取底层配置状态...[/bold cyan]",
+                border_style="cyan",
+            )
+        )
+
+        if not self._ensure_root():
+            self.console.print(
+                "[red]❌ 权限不足！读取 /data/data 必须拥有 Root 权限。请先在主菜单执行 [1 工程提权]。[/red]"
+            )
+            Prompt.ask("\n按回车返回...")
+            return
+
+        # 尝试查找 shared_prefs 目录下的所有 xml 文件
+        pref_dir = f"/data/data/{self.APP_PKG}/shared_prefs"
+        s, ls_out = self.driver.run(f"shell ls {pref_dir}")
+
+        if not s or "No such file" in ls_out or "Permission denied" in ls_out:
+            self.console.print(
+                f"[yellow]⚠️ 未找到标准配置缓存。[/yellow]\n[dim]可能原因：1. App 尚未使用过，未生成配置文件；2. App 使用了 SQLite 数据库而非 SharedPrefs。[/dim]"
+            )
+            Prompt.ask("\n按回车返回...")
+            return
+
+        xml_files = [
+            f.strip() for f in ls_out.splitlines() if f.strip().endswith(".xml")
+        ]
+
+        if not xml_files:
+            self.console.print("[yellow]⚠️ 目录存在，但未找到 XML 配置文件。[/yellow]")
+            Prompt.ask("\n按回车返回...")
+            return
+
+        for xml_file in xml_files:
+            self.console.print(f"\n[bold blue]📄 解析文件: {xml_file}[/bold blue]")
+            s, cat_out = self.driver.run(f"shell cat {pref_dir}/{xml_file}")
+
+            if not s:
+                continue
+
+            # 使用正则解析标准的 Android XML Prefs 格式
+            table = Table(
+                box=box.ROUNDED,
+                show_header=True,
+                header_style="bold yellow",
+                expand=True,
+            )
+            table.add_column("配置项 (Key)", style="cyan", ratio=1)
+            table.add_column("当前值 (Value)", style="bold white", ratio=1)
+
+            parsed_count = 0
+            for line in cat_out.splitlines():
+                match = re.search(r'name="([^"]+)"', line)
+                if match:
+                    key = match.group(1)
+                    val_match = re.search(r'value="([^"]+)"|>([^<]+)</', line)
+                    val = "NULL"
+                    if val_match:
+                        val = (
+                            val_match.group(1)
+                            if val_match.group(1)
+                            else val_match.group(2)
+                        )
+
+                    if val in ["1", "true", "TRUE"]:
+                        val_str = f"[green]{val} (ON)[/green]"
+                    elif val in ["0", "false", "FALSE"]:
+                        val_str = f"[dim]{val} (OFF)[/dim]"
+                    else:
+                        val_str = val
+
+                    table.add_row(key, val_str)
+                    parsed_count += 1
+
+            if parsed_count > 0:
+                self.console.print(table)
+            else:
+                self.console.print(
+                    Panel(
+                        cat_out,
+                        title="[dim]原始数据 (未匹配到标准格式)[/dim]",
+                        border_style="dim",
+                    )
+                )
+
+        self.console.print("\n[green]✅ 导出完成。[/green]")
+        Prompt.ask("按回车返回...")
+
+    # ══════════════════════════════════════════════
+    # 功能 3: 🔎 监听 MCU 下发通信日志 (Live Log)
+    # ══════════════════════════════════════════════
+    def action_live_log(self):
+        from rich.panel import Panel
+        from rich.prompt import Prompt
+        from rich import box
+        import platform
+
+        self.console.clear()
+        self.console.print(
+            Panel(
+                "[bold magenta]🔎 MCU 实时通信日志监听[/bold magenta]\n[dim]请在车机屏幕上点击「下发到 MCU」，观察下方串口报文。按 Ctrl+C 停止监听。[/dim]",
+                style="magenta",
+                box=box.DOUBLE,
+            )
+        )
+
+        # 1. 清理旧日志，防止干扰
+        self.driver.run("logcat -c")
+
+        # 2. 核心过滤关键词 (不分大小写)
+        keywords = [
+            "mcu",
+            "configurationword",
+            "adayo",
+            "uart",
+            "serial",
+            "adas",
+            "send",
+            "ack",
+        ]
+
+        # 构建基础命令
+        prefix = f"adb -s {self.driver.device_id} " if self.driver.device_id else "adb "
+        cmd = prefix + "logcat -v time"
+
+        startupinfo = None
+        if platform.system() == "Windows":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        try:
+            # 开启子进程实时读取
+            proc = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                startupinfo=startupinfo,
+            )
+
+            self.console.print(
+                "[bold green]📡 监听已启动，等待数据接收...[/bold green]\n"
+            )
+
+            while True:
+                line = proc.stdout.readline()
+                if not line:
+                    break
+
+                line_strip = line.strip()
+                if not line_strip:
+                    continue
+
+                line_lower = line_strip.lower()
+
+                # Python 层面的高速过滤
+                if any(kw in line_lower for kw in keywords):
+
+                    # --- 报文高亮美化 ---
+                    style = "white"
+                    if "send" in line_lower or "tx" in line_lower:
+                        style = "bold cyan"
+                    elif (
+                        "ack" in line_lower
+                        or "success" in line_lower
+                        or "ok" in line_lower
+                    ):
+                        style = "bold green"
+                    elif (
+                        "fail" in line_lower
+                        or "error" in line_lower
+                        or "timeout" in line_lower
+                    ):
+                        style = "bold red"
+                    elif self.APP_PKG in line_lower:
+                        style = "yellow"
+
+                    self.console.print(line_strip, style=style, markup=False)
+
+        except KeyboardInterrupt:
+            proc.terminate()
+            self.console.print("\n[yellow]⏹ 监听已手动停止。[/yellow]")
+        except Exception as e:
+            self.console.print(f"\n[red]❌ 发生错误: {e}[/red]")
+        finally:
+            Prompt.ask("\n按回车返回菜单...")
+
+    # ══════════════════════════════════════════════
+    # 主菜单
+    # ══════════════════════════════════════════════
+    def run_menu(self):
+        from rich.table import Table
+        from rich.panel import Panel
+        from rich.prompt import Prompt
+        from rich import box
+
+        while True:
+            self.console.clear()
+
+            # 检测状态用于菜单展示
+            with self.console.status("[dim]正在探测 ADAS 配置应用状态...[/dim]"):
+                is_installed = self._is_app_installed()
+                is_running = self._is_app_running()
+
+            status_str = (
+                "[green]🟢 App 已安装[/green]"
+                if is_installed
+                else "[red]❌ App 未安装[/red]"
+            )
+            run_str = (
+                "[bold cyan]📱 运行于前台[/bold cyan]"
+                if is_running
+                else "[dim]💤 处于后台或关闭[/dim]"
+            )
+
+            header = Table.grid(expand=True)
+            header.add_column(ratio=1)
+            header.add_row(f"应用状态: {status_str} | {run_str}")
+
+            self.console.print(
+                Panel(
+                    header,
+                    title="[bold cyan]🚗 车机配置字调试中心 (Configuration Word)[/bold cyan]",
+                    border_style="cyan",
+                )
+            )
+
+            menu = Table.grid(padding=(0, 2))
+            menu.add_row(
+                "[bold yellow]1[/bold yellow]",
+                "🚀 [bold]一键启/停配置字界面[/bold] [dim](Launch/Kill)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]2[/bold yellow]",
+                "📡 [bold cyan]导出当前配置状态[/bold cyan] [dim](Dump Prefs/XML)[/dim]",
+            )
+            menu.add_row(
+                "[bold yellow]3[/bold yellow]",
+                "🔎 [bold magenta]监听 MCU 下发通信日志[/bold magenta] [dim](Live Log)[/dim]",
+            )
+            menu.add_row("[bold yellow]b[/bold yellow]", "返回主菜单")
+
+            self.console.print(Panel(menu, border_style="dim"))
+
+            c = Prompt.ask("\n[bold cyan]请输入指令[/bold cyan]").lower().strip()
+
+            if c == "1":
+                self.action_toggle_app()
+            elif c == "2":
+                self.action_dump_prefs()
+            elif c == "3":
+                self.action_live_log()
+            elif c == "b":
+                return
+
+
+# ==========================================
 # 展示层: CAR-HOUSE-KEEP v3.2.1
 # ==========================================
 class CarHouseKeepApp:
@@ -5567,7 +9784,12 @@ class CarHouseKeepApp:
             self.console, self.config_loader
         )  # 传入 config
         self.video_tool = ScreenRecorder(self.driver, self.console)
-        self.monkey_tool = MonkeyTester(self.driver, self.console)
+        self.monkey_tool = MonkeyTester(
+            driver=self.driver,
+            console=self.console,
+            config_loader=self.config_loader,
+            # screenshot_mgr=self.screenshot_manager,
+        )
         self.img_converter = ImageConverter(self.console)
         self.perf_master = PerformanceMaster(self.driver, self.console)
 
@@ -5595,6 +9817,13 @@ class CarHouseKeepApp:
         self.current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.time_update_stop = False
         self.time_update_thread = None
+
+        self.pcm_center = PcmAudioCenter(self.driver, self.console, self.config_loader)
+
+        # 新增：服务诊断模块
+        self.service_diag = ServiceDiagnosis(self.driver, self.console)
+        self.bt_center = BluetoothDiagCenter(self.driver, self.console)
+        self.config_center = VehicleConfigCenter(self.driver, self.console)
 
     def _start_time_update_thread(self):
         """启动后台时间更新线程"""
@@ -6026,8 +10255,16 @@ class CarHouseKeepApp:
                 "[bold yellow]12[/bold yellow] ⏱️ [bold cyan]性能测速[/bold cyan] [dim](Cold/Hot Start)[/dim]",
             )
             menu_table.add_row(
-                "[bold yellow]13[/bold yellow] 📥 [bold cyan]素材采集中心[/bold cyan] [dim](Download)[/dim]"  # 新增,
-                "[bold red]q[/bold red]   退出系统"
+                "[bold yellow]13[/bold yellow] 📥 [bold cyan]素材采集中心[/bold cyan] [dim](Download)[/dim]",
+                "[bold yellow]14[/bold yellow] 🎵 [bold cyan]PCM 音频诊断中心[/bold cyan] [dim](Extract/WAV/Analyze)[/dim]",
+            )
+            menu_table.add_row(
+                "[bold yellow]15[/bold yellow] 🔍 服务诊断 [dim](List/Restart/Log)[/dim]",
+                "[bold yellow]16[/bold yellow] 📶 [bold blue]蓝牙诊断中心[/bold blue] [dim](HCI Snoop/Tools)[/dim]",
+            )
+            menu_table.add_row(
+                "[bold yellow]17[/bold yellow] 🚗 [bold cyan]车机配置字与ADAS调试[/bold cyan] [dim](ConfigWord/MCU)[/dim]",
+                "[bold red]q[/bold red]   退出系统 ",
             )
             self.console.print(menu_table)
 
@@ -6069,6 +10306,15 @@ class CarHouseKeepApp:
                 self.perf_master.run_menu()
             elif c == "13":
                 self.material_center.run_menu()
+
+            elif c == "14":
+                self.pcm_center.run_menu()
+            elif c == "15":
+                self.service_diag.run_menu()
+            elif c == "16":
+                self.bt_center.run_menu()
+            elif c == "17":
+                self.config_center.run_menu()
 
             elif c == "q":
                 # --- [新增] 1. 防误触二次确认 ---

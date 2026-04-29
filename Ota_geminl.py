@@ -1120,3 +1120,6 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     else:
         sys.exit(0)
+echo gpu_set_log_level 5 > /dev/kgsl-control
+echo gpu_per_process_busy 1000 > /dev/kgsl-control
+slog2info -w |grep 'For process'

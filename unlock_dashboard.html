@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>工程模式解锁 - 琥珀色专业版</title>
+    <style>
+        :root {
+            --bg: #0F172A;
+            --card: #1E293B;
+            --accent: #FBBF24; /* 琥珀色 */
+            --success: #22C55E;
+            --text-dim: #94A3B8;
+        }
+
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* 背景装饰 */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.03) 0%, transparent 70%);
+            z-index: -1;
+        }
+
+        .container {
+            text-align: center;
+            width: 95%;           /* 宽度随屏幕变化 */
+            max-width: 1200px;    /* 仅限制在大屏下的最大宽度 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 0.8rem;
+            color: #22C55E;
+            border: 1px solid currentColor;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .vin-info {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .label {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: var(--accent);
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        /* 核心展示区 */
+        .pwd-card {
+            background: var(--card);
+            box-sizing: border-box; /* 确保 padding 不会撑破容器 */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            width: auto;          /* 宽度随内部数字自动撑开 */
+            max-width: 100%;      /* 绝对不能超过屏幕宽度 */
+            padding: 5% 4%;       /* 使用百分比内边距，屏幕小时自动缩小空间 */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .pwd-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.1);
+        }
+
+        .pwd-value {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: clamp(1.5rem, 7.5vw, 5.5rem);
+            font-weight: 800;
+            letter-spacing: clamp(2px, 0.6vw, 8px);
+            color: var(--accent);
+            letter-spacing: clamp(2px, 0.6vw, 8px);
+
+            margin: 0;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+        }
+
+        .copy-hint {
+            margin-top: 30px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-refresh {
+            margin-top: 50px;
+            background: transparent;
+            border: 1px solid #334155;
+            color: var(--text-dim);
+            padding: 12px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-refresh:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* 历史记录微缩视图 */
+        .history-drawer {
+            margin-top: 60px;
+            width: 100%;
+            border-top: 1px solid #334155;
+            padding-top: 30px;
+        }
+
+        .history-item {
+            display: flex;
+            /* 核心修改：确保子元素分散两头 */
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px 25px; /* 稍微加大内边距 */
+            border-radius: 12px;
+            margin: 10px auto; /* 居中 */
+            width: 100%;       /* 撑满容器 */
+            max-width: 800px;  /* 限制最大宽度，防止在大屏上分得太开 */
+            box-sizing: border-box;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        /* 鼠标悬停效果：变亮并显示边框 */
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent);
+}
+        /* 历史记录里的密码样式 */
+        .history-pwd {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* 复制按钮的小标签样式 */
+        .history-copy-btn {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            background: var(--accent);
+            color: var(--bg);
+            border-radius: 4px;
+            margin-left: 10px;
+            opacity: 0; /* 默认隐藏 */
+            transition: opacity 0.2s;
+        }
+
+        .history-item:hover .history-copy-btn {
+            opacity: 1; /* 悬浮时显示 */
+        }
+
+        /* 隐藏输入框用于复制兼容性 */
+        #hiddenInput {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">● 连接正常</div>
+
+    <div class="container">
+        <div class="vin-info">VIN: LNKBJG13642GFR004356</div>
+        <div class="label">Today's Engineering Code</div>
+
+        <div class="pwd-card" onclick="copyToClipboard()">
+            <div class="pwd-value" id="pwdHolder">892B70ED30E320260127</div>
+            <div class="copy-hint" id="hintText">点击卡片复制密码</div>
+        </div>
+
+        <button class="btn-refresh" onclick="window.location.reload()">
+            🔄 刷新数据 (Update Data)
+        </button>
+
+        <div class="history-item">
+    <div style="display: flex; gap: 20px; align-items: center;">
+        <span style="color: var(--text-dim); font-size: 0.9rem;">16:19:12</span>
+        <span style="font-family: monospace; color: #64748B;">VIN: LNKBJG***</span>
+    </div>
+
+    <div onclick="copyHistoricalPwd(this, '892B70ED30E320260127')" style="display: flex; align-items: center; cursor: pointer; gap: 10px;">
+        <span class="history-pwd" style="letter-spacing: 1px;">892B70ED30E320260127</span>
+        <span class="history-copy-btn">COPY</span>
+    </div>
+</div>
+</div>
+    </div>
+
+    <input type="text" id="hiddenInput" readonly>
+
+    <script>
+        function copyToClipboard() {
+            const text = document.getElementById('pwdHolder').innerText;
+            if (text.includes('-')) return;
+
+            const input = document.getElementById('hiddenInput');
+            const hint = document.getElementById('hintText');
+
+            input.value = text;
+            input.select();
+
+            try {
+                document.execCommand('copy');
+                // 视觉反馈
+                hint.innerHTML = "<span style='color:var(--success)'>✔ 已复制到剪贴板</span>";
+                document.getElementById('pwdHolder').style.transform = "scale(0.98)";
+                setTimeout(() => {
+                    hint.innerText = "点击卡片复制密码";
+                    document.getElementById('pwdHolder').style.transform = "scale(1)";
+                }, 1500);
+            } catch (err) {
+                alert('复制失败，请手动输入');
+            }
+        }
+
+
+        function copyHistoricalPwd(element, text) {
+    // 兼容性复制逻辑
+    const input = document.getElementById('hiddenInput');
+    input.value = text;
+    input.select();
+
+    try {
+        document.execCommand('copy');
+
+        // 视觉反馈：改变那个 "COPY" 按钮的文字
+        const btn = element.querySelector('.history-copy-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "COPIED!";
+        btn.style.background = "var(--success)";
+
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "var(--accent)";
+        }, 1000);
+    } catch (err) {
+        console.error('复制失败');
+    }
+}
+    </script>
+</body>
+</html>

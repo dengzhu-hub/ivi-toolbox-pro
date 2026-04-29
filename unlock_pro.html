@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>工程模式离线解锁码生成器</title>
+    <style>
+        :root {
+            --bg: #0a0a0b;
+            --accent: #ff3e3e;
+            --success: #00f2ff;
+            --panel: #16161a;
+        }
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            background: var(--panel);
+            border-bottom: 1px solid #333;
+            margin-bottom: 40px;
+        }
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            background: #004444;
+            color: #00f2ff;
+            border: 1px solid #00f2ff;
+        }
+        .main-card {
+            background: var(--panel);
+            padding: 50px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            max-width: 90%;
+        }
+        .vin-display {
+            color: #888;
+            font-family: monospace;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .pwd-label {
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+        .pwd-value {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 8px;
+            cursor: pointer;
+            padding: 20px;
+            background: rgba(255, 62, 62, 0.1);
+            border-radius: 15px;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .pwd-value:hover {
+            background: rgba(255, 62, 62, 0.2);
+            transform: scale(1.02);
+        }
+        .pwd-value:active { transform: scale(0.98); }
+
+        .history-section {
+            margin-top: 50px;
+            width: 800px;
+            max-width: 90%;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            background: #111;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--success);
+            font-family: monospace;
+        }
+        .hint {
+            margin-top: 20px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        .refresh-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: var(--success);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="status-badge">● 状态: 连接正常</span>
+    </div>
+
+    <div class="main-card">
+        <div class="vin-display">VIN: LNKBJG13642GFR004356</div>
+        <div class="pwd-label">今日工程模式解锁码</div>
+        <div class="pwd-value" id="pwdText" onclick="copyPwd()">892B70ED30E320260127</div>
+        <div class="hint">点击大号数字即可复制密码</div>
+        <button class="refresh-btn" onclick="location.reload()">重新获取最新数据</button>
+    </div>
+
+    <div class="history-section">
+        <h3 style="color: #666; border-bottom: 1px solid #333; padding-bottom: 10px;">本次运行记录</h3>
+        <div id="historyList">
+            <div class="history-item">
+                <span>15:59:40</span>
+                <span style="color:var(--success)">LNKBJG13...</span>
+                <span style="font-weight:bold">892B70ED30E320260127</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyPwd() {
+            const text = document.getElementById('pwdText').innerText;
+            if(text.includes('-')) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const original = document.getElementById('pwdText').style.color;
+                document.getElementById('pwdText').innerText = "COPIED!";
+                document.getElementById('pwdText').style.color = "var(--success)";
+                setTimeout(() => {
+                    document.getElementById('pwdText').innerText = text;
+                    document.getElementById('pwdText').style.color = "#fff";
+                }, 800);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# CMD: cat /proc/asound/cards
+# TIME: 2026-04-27 11:10:15.963313
+
+0 [sa8155adpstarsn]: sa8155-adp-star - sa8155-adp-star-snd-card
+                      sa8155-adp-star-snd-card
